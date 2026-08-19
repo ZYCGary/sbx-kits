@@ -4,6 +4,12 @@ Mixin kit that installs the tooling the `claude` agent expects to find inside a
 Docker Sandbox. Intended to be attached to every new sandbox, and re-applied to
 existing ones as the kit grows.
 
+It declares `requires.agent: claude`, so composition fails loudly if it is ever
+attached to a different base agent. That is honest rather than restrictive — the
+kit registers a Claude Code hook, so it genuinely has nothing to offer another
+agent. (Contrast `laravel-sail`, which is agent-neutral and so declares no
+requirement.)
+
 Currently installs:
 
 | Tool  | What it is                                       | How it's installed          |
@@ -30,6 +36,38 @@ packages, Docker images, volumes, and agent history survive the restart.
 ## Host-side prerequisites
 
 None. No credentials, no host state.
+
+## Network: deliberately empty
+
+This kit ships **no `permissions.network.allow` rules**, even though its install
+steps clearly reach the network. That is a deliberate security choice: an
+allowlist written from reading a script is a guess, and guesses are always wider
+than the real contract. Default-deny plus a real failure gives you the exact
+list instead.
+
+So the first run of this kit is expected to fail. Recover the truth from the log
+and add only what it names:
+
+    sbx policy log                  # the hosts that were actually blocked
+    # add those hosts to permissions.network.allow in spec.yaml
+    sbx kit add <sandbox> ./.sbx/kits/claude-tools/
+
+Repeat until the install completes — a blocked step can mask the host the *next*
+step needs, so expect more than one pass. Record the reason for each host in the
+table below as you add it, so a later reader can tell a required host from a
+leftover.
+
+| Host | Needed for |
+| ---- | ---------- |
+| _(none yet — populate from `sbx policy log`)_ | |
+
+For reference, rtk's installer is known to reach `raw.githubusercontent.com`
+(the script), `github.com` (the `/releases/latest` redirect and the download),
+`release-assets.githubusercontent.com` (where that download redirects), and
+`api.github.com` (only as a fallback when the redirect parse fails). Treat that
+as a hint for interpreting the log, not as a list to paste in — some of it may
+already be covered by the active network preset, and the fallback host may never
+be touched.
 
 ## Staying hot-addable
 
@@ -65,30 +103,19 @@ The installer resolves the latest release, verifies it against the release's
 `checksums.txt`, and re-runs cleanly, so it stays current as new versions ship.
 To pin instead, export `RTK_VERSION=vX.Y.Z` alongside `RTK_INSTALL_DIR`.
 
-**`rtk init -g`** runs as the agent user (`1000`), not root, because it writes
-the hook and `RTK.md` into the agent's own `~/.claude/`. Running it as root
-would write to root's home and the hook would silently never fire. The official
-guide says to restart Claude Code afterwards; here the agent has not started
-yet when `setup.install` runs, so there is nothing to restart.
+**`rtk init -g`** carries `user: "1000"`. Sandbox images are required to provide
+a non-root `agent` user at UID 1000, and `setup.install` steps run as root
+(`user: "0"`) unless told otherwise — so without that line, `rtk init -g` would
+write the hook and `RTK.md` into *root's* `~/.claude/` instead of the agent's,
+and the hook would silently never fire. The field takes the numeric UID, not the
+name. The first step keeps the root default because `/usr/local/bin` is not
+writable by the agent user.
 
-## Why these hosts
+(`setup.startup` steps have the opposite default — UID 1000 — so a startup step
+needing root is the case that must be spelled out.)
 
-All four are the installer's outbound contract, not guesses from the docs page:
-
-| Host                                   | Needed for                                          |
-| -------------------------------------- | --------------------------------------------------- |
-| `raw.githubusercontent.com`            | fetching `install.sh` itself                        |
-| `github.com`                           | the `/releases/latest` redirect and the download URL |
-| `api.github.com`                       | the installer's fallback path for resolving the tag |
-| `release-assets.githubusercontent.com` | where the download URL redirects to for the bytes   |
-
-Two of these are easy to miss. GitHub serves release assets from a redirect
-host, so allowing `github.com` alone yields a download that dies after the 302.
-And the installer resolves the version from the redirect first, falling back to
-the REST API — the fallback only fires when the primary path fails, so leaving
-`api.github.com` blocked would break installs rarely and confusingly rather than
-never. If a future step's downloads fail, read the real blocked host out of
-`sbx policy log` rather than guessing from the URL.
+The official guide says to restart Claude Code afterwards; here the agent has
+not started yet when `setup.install` runs, so there is nothing to restart.
 
 ## Cleanup
 

@@ -5,13 +5,10 @@ version: 0.1.0
 displayName: Claude agent tooling
 description: Installs and initializes the tooling the Claude agent expects in-sandbox.
 sourceURL: https://github.com/ZYCGary/sbx-kits
-permissions:
-  network:
-    allow:
-      - raw.githubusercontent.com
-      - github.com
-      - api.github.com
-      - release-assets.githubusercontent.com
+requires:
+  agent: claude
+# No permissions.network block on purpose. Hosts are added only after a real
+# failure names them in `sbx policy log` — see the README.
 setup:
   install:
     - description: Install rtk using the official installer

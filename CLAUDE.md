@@ -46,14 +46,29 @@ Kits cannot be removed from a running sandbox; the sandbox must be recreated.
 laravel-sail hosts exist purely because of this (`ppa.launchpadcontent.net` vs the
 preset's `ppa.launchpad.net`; `deb.nodesource.com` vs `nodesource.com`).
 
-**Derive allowlists from `sbx policy log`, not from the Dockerfile.** `apt-get update`
-refreshes metadata for every configured source, so the real outbound set is wider than
-the packages a build asks for.
+**Derive allowlists from `sbx policy log`, never from reading a Dockerfile or install
+script.** This is the repo's standing rule, and it is a security position, not just a
+convenience one: an allowlist written by prediction is always wider than the real
+contract. Write the kit with no network rules, let the first run fail, and add exactly
+the hosts the log names — accepting several failing passes, since a blocked step masks
+what the next step would have needed. `claude-tools` ships with an empty allowlist for
+this reason; `laravel-sail`'s six hosts were each earned by an observed failure. Reading
+the script is still useful for *interpreting* the log, just never for populating the
+list. (`apt-get update` is the classic case for why prediction fails: it refreshes
+metadata for every configured source, not just the package you asked for.)
+
+**Set `requires.agent` on any mixin that is agent-specific.** It is mixin-only, takes one
+base-agent name, and is enforced during composition — `claude-tools` uses it because it
+registers a Claude Code hook, while `laravel-sail` omits it because it is agent-neutral.
+
+**`setup.install` steps run as root; `setup.startup` steps run as UID 1000.** Sandbox
+images provide a non-root `agent` user at UID 1000, and the field takes the numeric UID,
+not the name. Any install step writing into the agent's home needs an explicit
+`user: "1000"` — without it the write lands in root's home and whatever depended on it
+fails silently rather than loudly.
 
 **`setup.install` commands re-run on every restart**, so every one of them must be
-idempotent — check for the installed version and exit early rather than reinstalling.
-They run as root (`user: "0"`) by default; anything that writes into the agent's home,
-such as `rtk init --global`, needs `user: "1000"` or it silently targets root's home.
+idempotent — guard with a version check rather than reinstalling blindly.
 
 **Do not allowlist hosts you cannot attribute.** laravel-sail deliberately leaves
 `http-intake.logs.us5.datadoghq.com` blocked because its source is unidentified.
