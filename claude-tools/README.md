@@ -80,60 +80,69 @@ recreate. Two consequences to respect when extending it:
   a file must be written by an `install` command instead, or split into a
   separate kit that is accepted at creation time only.
 - **Every install command must be idempotent.** They re-run on every
-  `sbx kit add` and on every restart. rtk's installer overwrites its own binary
-  cleanly and `rtk init -g` is safe to repeat; new steps must be equally
-  re-runnable, which for most package installs means a guard rather than a bare
-  install command.
+  `sbx kit add`, which is how this kit is meant to be updated. rtk's installer
+  overwrites its own binary cleanly and `rtk init -g` is safe to repeat; new
+  steps must be equally re-runnable, which for most package installs means a
+  guard rather than a bare install command.
 
 ## Install steps
 
-**rtk** is installed with the project's own installer, exactly as its README
-documents — no environment overrides:
+The kit follows the shape the Docker docs use for this exact case — their `nvm`
+example is the same problem, a `curl … | sh` installer that writes into the
+agent's home:
 
-    curl -fsSL https://raw.githubusercontent.com/rtk-ai/rtk/refs/heads/master/install.sh | sh
+```yaml
+setup:
+  install:
+    - command: "curl -fsSL https://raw.githubusercontent.com/rtk-ai/rtk/refs/heads/master/install.sh | sh"
+      user: "1000"
+      description: Install rtk
+    - command: "rtk init -g"
+      user: "1000"
+      description: Register the rtk hook in the agent's Claude config
+```
 
-It lands in `~/.local/bin`, the installer's default. That is the right place
-here rather than merely an acceptable one: the sandbox's own `claude` binary
-lives at `/home/agent/.local/bin/claude`, so the directory is demonstrably on
-the agent's `PATH` already. An earlier version of this kit redirected the
-install to `/usr/local/bin` via `RTK_INSTALL_DIR` out of a worry about `PATH`
-that turned out to be unfounded.
+That is rtk's official installer with no environment overrides, followed by the
+official Claude Code setup step, `rtk init -g`.
 
-The installer resolves the latest release, verifies it against the release's
-`checksums.txt`, and re-runs cleanly, so it stays current as new versions ship.
-To pin, export `RTK_VERSION=vX.Y.Z` in the step.
+**Install location.** rtk lands in `~/.local/bin`, the installer's default. That
+is the right place rather than merely a tolerable one: the sandbox's own
+`claude` binary lives at `/home/agent/.local/bin/claude`, and an install step's
+`PATH` is
 
-**Both steps carry `user: "agent"`,** and the reason is the same for each: they
-resolve their target from `$HOME`, not from a fixed path. This is measured, not
-assumed — a probe kit with one step at the default and one at `agent` reports:
+    /home/agent/.local/bin:/usr/local/share/npm-global/bin:/usr/local/sbin:...
 
-    DEFAULT uid=0    user=root   HOME=/root
-    AS AGENT uid=1000 user=agent HOME=/home/agent
+so the second step resolves `rtk` with no help. An earlier version of this kit
+redirected the install to `/usr/local/bin` via `RTK_INSTALL_DIR` and prefixed
+the second step with `PATH="$HOME/.local/bin:$PATH"`; both were guarding against
+a problem that does not exist here.
 
-So the agent's home really is `/home/agent`, but that is the *agent's*
-environment, which is what `sbx exec` and the running agent see. A
-`setup.install` step is a different context: it defaults to root, and root's
-`$HOME` is `/root`. Without the `user` line the installer would write
-`/root/.local/bin/rtk` and `rtk init -g` would write `/root/.claude/` — both
-succeeding, neither anywhere the agent looks.
+**Why `user: "1000"`.** `setup.install` steps default to root, and root's
+`$HOME` is `/root`. Both steps resolve their target from `$HOME` — the installer
+writes `$HOME/.local/bin`, and `rtk init -g` writes `$HOME/.claude/` — so as
+root they would land in `/root` while still reporting success. Measured with a
+probe kit:
 
-Ownership is a second, independent reason. The same probe confirmed that a file
-a root install step creates under `/home/agent` stays `root:root`, so even if
-`$HOME` were somehow right, running as root would leave the agent unable to
-rewrite its own `settings.json` later.
+    default        uid=0    user=root   HOME=/root
+    user: "1000"   uid=1000 user=agent  HOME=/home/agent
 
-`"agent"` and `"1000"` both work and are equivalent; the name is used here
-because that is what the built-in `claude` kit uses for its own steps.
+Ownership is a second, independent reason: files a root step creates under
+`/home/agent` stay `root:root`, which would leave the agent unable to rewrite
+its own `settings.json` later. The numeric form is what the Docker examples use;
+`"agent"` also works.
 
-(`setup.startup` steps have the opposite default — the agent — so there it is a
-step needing *root* that must be spelled out.)
+**When these run.** `setup.install` runs once when the kit is applied — at
+sandbox creation or at `sbx kit add` — and *not* on ordinary restarts (verified:
+a stop/start left the step's run counter at 1). So the idempotency that matters
+is across re-applications of this kit, which is exactly the workflow it is built
+for. rtk's installer overwrites its own binary cleanly and `rtk init -g` is safe
+to repeat.
 
-The `PATH="$HOME/.local/bin:$PATH"` prefix on the second step is a hedge: each
-install step gets a fresh environment, and it is not established that
-`~/.local/bin` is on `PATH` in that context the way it is in the agent's own
-shell. The prefix costs nothing and removes the question.
+`setup.startup` is the other option and is wrong for this kit: it runs on every
+container start and is meant for daemons, cache warming, and config refresh.
+Nothing here needs to happen more than once per kit application.
 
-The official guide's final instruction — restart Claude Code — has no analogue
+The official guide's last instruction — restart Claude Code — has no analogue
 here: the agent has not started yet when `setup.install` runs.
 
 ## Cleanup

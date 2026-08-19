@@ -61,12 +61,13 @@ metadata for every configured source, not just the package you asked for.)
 base-agent name, and is enforced during composition — `claude-tools` uses it because it
 registers a Claude Code hook, while `laravel-sail` omits it because it is agent-neutral.
 
-**`setup.install` steps run as root; `setup.startup` steps run as the agent.** Measured
-with a probe kit: an install step at the default reports `uid=0 HOME=/root`, and the same
-step with `user: "agent"` reports `uid=1000 HOME=/home/agent`. Both `"agent"` and `"1000"`
-are accepted; the built-in `claude` kit uses the name. The agent's home being
-`/home/agent` is a fact about the *agent's* environment — what `sbx exec` and the running
-agent see — and says nothing about install steps, which are a separate context.
+**`setup.install` steps run as root (`"0"`); `setup.startup` steps run as the agent
+(`"1000"`).** Measured with a probe kit: an install step at the default reports
+`uid=0 HOME=/root`, and the same step with `user: "1000"` reports
+`uid=1000 HOME=/home/agent`. The agent's home being `/home/agent` is a fact about the
+*agent's* environment — what `sbx exec` and the running agent see — and says nothing
+about install steps, which are a separate context. Both `"1000"` and `"agent"` are
+accepted; prefer the numeric form the Docker examples use.
 
 The test for whether a step needs `user: "agent"` is **whether it resolves any path from
 `$HOME`** — as root that is `/root`, so the write lands somewhere the agent never looks
@@ -78,12 +79,22 @@ To settle this class of question, write a throwaway probe kit that echoes `id -u
 `$HOME` to a file, attach it to a scratch sandbox (`sbx create --name probe --kit ...`),
 and `sbx exec` the file back — it takes about a minute and beats reasoning from the docs.
 
-**The agent's `~/.local/bin` is on `PATH`** — the sandbox's own `claude` binary lives at
-`/home/agent/.local/bin/claude`. Prefer an installer's `~/.local/bin` default over
-redirecting it to `/usr/local/bin`, which only buys a root requirement.
+**The agent's `~/.local/bin` is on `PATH`, including inside install steps** — the
+sandbox's own `claude` binary lives at `/home/agent/.local/bin/claude`, and a step at
+`user: "1000"` reports `PATH=/home/agent/.local/bin:/usr/local/share/npm-global/bin:...`.
+Prefer an installer's `~/.local/bin` default over redirecting it to `/usr/local/bin`,
+which only buys a root requirement, and do not bother re-exporting `PATH` to reach a tool
+a previous step just installed.
 
-**`setup.install` commands re-run on every restart**, so every one of them must be
-idempotent — guard with a version check rather than reinstalling blindly.
+**`setup.install` runs once per kit application** — at sandbox creation or `sbx kit add`
+— and not on ordinary restarts (verified: a stop/start left a probe step's run counter at
+1). Idempotency is still required, because re-applying a kit with `sbx kit add` is the
+normal way to update it. `setup.startup` is the one that replays on every container
+start; reserve it for daemons, cache warming, and config refresh.
+
+**Follow the official examples' shape** (`kit-examples` in the Docker docs) when they
+cover the case — their `nvm` kit is the model for any `curl … | sh` installer that writes
+into the agent's home.
 
 **Do not allowlist hosts you cannot attribute.** laravel-sail deliberately leaves
 `http-intake.logs.us5.datadoghq.com` blocked because its source is unidentified.
