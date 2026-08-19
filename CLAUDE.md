@@ -62,9 +62,13 @@ would have needed. Read the script only to *interpret* the log.
 **A fresh sandbox has no Claude Code marketplaces configured at all**, not even
 `claude-plugins-official`. Add the marketplace before installing any plugin. The
 `plugin@marketplace` suffix only selects among *configured* marketplaces, and its failure
-message ("your local copy may be out of date") misdescribes the cause. Guard both the
-marketplace add and the install with a `grep` over `claude plugin marketplace list` /
-`claude plugin list` to stay idempotent.
+message ("your local copy may be out of date") misdescribes the cause.
+
+Both commands are already idempotent — at 2.1.221, `marketplace add` on a configured
+marketplace and `plugin install` on an installed plugin each print `already …` and exit 0
+(measured in-sandbox). Do not wrap them in a `grep` guard over `claude plugin list`: the
+guard cannot prevent an error that does not happen, and its substring match can silently
+skip a needed install.
 
 **`~/.claude/skills` is a persistent store shared read-write across all sandboxes.**
 Anything written there leaks into every other sandbox and survives their removal;

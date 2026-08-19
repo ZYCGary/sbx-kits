@@ -17,18 +17,14 @@ setup:
       description: Install rtk and register its PreToolUse hook
     - command: |
         set -eu
-        claude plugin marketplace list | grep -q i-have-adhd \
-          || claude plugin marketplace add ayghri/i-have-adhd
-        claude plugin list | grep -q i-have-adhd \
-          || claude plugin install i-have-adhd@i-have-adhd
+        claude plugin marketplace add ayghri/i-have-adhd
+        claude plugin install i-have-adhd@i-have-adhd
       user: "1000"
       description: Install the i-have-adhd plugin
     - command: |
         set -eu
-        claude plugin marketplace list | grep -q claude-plugins-official \
-          || claude plugin marketplace add anthropics/claude-plugins-official
-        claude plugin list | grep -q mattpocock-skills \
-          || claude plugin install mattpocock-skills@claude-plugins-official
+        claude plugin marketplace add anthropics/claude-plugins-official
+        claude plugin install mattpocock-skills@claude-plugins-official
       user: "1000"
       description: Install the mattpocock-skills plugin
     - command: |
