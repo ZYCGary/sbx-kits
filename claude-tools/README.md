@@ -103,30 +103,35 @@ The installer resolves the latest release, verifies it against the release's
 `checksums.txt`, and re-runs cleanly, so it stays current as new versions ship.
 To pin, export `RTK_VERSION=vX.Y.Z` in the step.
 
-**Both steps carry `user: "1000"`,** and the reason is the same for each: they
-resolve their target from `$HOME`, not from a fixed path. `setup.install` steps
-run as root unless told otherwise, and root's `$HOME` is `/root` — so as root
-the installer would write `/root/.local/bin/rtk` and `rtk init -g` would write
-`/root/.claude/`. Neither is where the agent looks. UID 1000 is the non-root
-`agent` user that every sandbox image is required to provide; the field takes
-the numeric UID, not the name.
+**Both steps carry `user: "agent"`,** and the reason is the same for each: they
+resolve their target from `$HOME`, not from a fixed path. This is measured, not
+assumed — a probe kit with one step at the default and one at `agent` reports:
 
-(`setup.startup` steps have the opposite default — UID 1000 — so there it is a
+    DEFAULT uid=0    user=root   HOME=/root
+    AS AGENT uid=1000 user=agent HOME=/home/agent
+
+So the agent's home really is `/home/agent`, but that is the *agent's*
+environment, which is what `sbx exec` and the running agent see. A
+`setup.install` step is a different context: it defaults to root, and root's
+`$HOME` is `/root`. Without the `user` line the installer would write
+`/root/.local/bin/rtk` and `rtk init -g` would write `/root/.claude/` — both
+succeeding, neither anywhere the agent looks.
+
+Ownership is a second, independent reason. The same probe confirmed that a file
+a root install step creates under `/home/agent` stays `root:root`, so even if
+`$HOME` were somehow right, running as root would leave the agent unable to
+rewrite its own `settings.json` later.
+
+`"agent"` and `"1000"` both work and are equivalent; the name is used here
+because that is what the built-in `claude` kit uses for its own steps.
+
+(`setup.startup` steps have the opposite default — the agent — so there it is a
 step needing *root* that must be spelled out.)
 
 The `PATH="$HOME/.local/bin:$PATH"` prefix on the second step is a hedge: each
 install step gets a fresh environment, and it is not established that
 `~/.local/bin` is on `PATH` in that context the way it is in the agent's own
 shell. The prefix costs nothing and removes the question.
-
-**Worth verifying on first run:** this all assumes `sbx` sets `$HOME` to
-`/home/agent` for a step declared `user: "1000"`. If it instead keeps root's
-environment while dropping privileges, the installer will fail trying to write
-into `/root` — loudly, and the fix is to hardcode
-`RTK_INSTALL_DIR=/home/agent/.local/bin`. Confirm with:
-
-    sbx exec <sandbox> -- ls -l /home/agent/.local/bin/rtk
-    sbx exec <sandbox> -- grep -c rtk /home/agent/.claude/settings.json
 
 The official guide's final instruction — restart Claude Code — has no analogue
 here: the agent has not started yet when `setup.install` runs.

@@ -61,12 +61,22 @@ metadata for every configured source, not just the package you asked for.)
 base-agent name, and is enforced during composition — `claude-tools` uses it because it
 registers a Claude Code hook, while `laravel-sail` omits it because it is agent-neutral.
 
-**`setup.install` steps run as root; `setup.startup` steps run as UID 1000.** Sandbox
-images provide a non-root `agent` user at UID 1000, and the field takes the numeric UID,
-not the name. The test for whether a step needs `user: "1000"` is not what it installs
-but **whether it resolves any path from `$HOME`** — as root that is `/root`, so the
-write lands somewhere the agent never looks and the step still reports success. Both of
-`claude-tools`' steps need it for exactly this reason.
+**`setup.install` steps run as root; `setup.startup` steps run as the agent.** Measured
+with a probe kit: an install step at the default reports `uid=0 HOME=/root`, and the same
+step with `user: "agent"` reports `uid=1000 HOME=/home/agent`. Both `"agent"` and `"1000"`
+are accepted; the built-in `claude` kit uses the name. The agent's home being
+`/home/agent` is a fact about the *agent's* environment — what `sbx exec` and the running
+agent see — and says nothing about install steps, which are a separate context.
+
+The test for whether a step needs `user: "agent"` is **whether it resolves any path from
+`$HOME`** — as root that is `/root`, so the write lands somewhere the agent never looks
+and the step still reports success. A second reason is ownership: files a root step
+creates under `/home/agent` stay `root:root`, which can lock the agent out of rewriting
+its own config later. Both of `claude-tools`' steps need it on both counts.
+
+To settle this class of question, write a throwaway probe kit that echoes `id -u` and
+`$HOME` to a file, attach it to a scratch sandbox (`sbx create --name probe --kit ...`),
+and `sbx exec` the file back — it takes about a minute and beats reasoning from the docs.
 
 **The agent's `~/.local/bin` is on `PATH`** — the sandbox's own `claude` binary lives at
 `/home/agent/.local/bin/claude`. Prefer an installer's `~/.local/bin` default over

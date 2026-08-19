@@ -11,16 +11,16 @@ requires:
 # failure names them in `sbx policy log` — see the README.
 setup:
   install:
-    # Both steps run as the agent (UID 1000): the installer and `rtk init -g`
-    # both resolve their target from $HOME, so as root they would land in
-    # /root instead of /home/agent.
+    # Both steps run as the agent: the installer and `rtk init -g` both resolve
+    # their target from $HOME. Measured: an install step defaults to uid=0 with
+    # HOME=/root, so without this they would land in /root, not /home/agent.
     - description: Install rtk using the official installer
-      user: "1000"
+      user: "agent"
       command: |
         set -eu
         curl -fsSL https://raw.githubusercontent.com/rtk-ai/rtk/refs/heads/master/install.sh | sh
     - description: Register the rtk hook in the agent's global Claude config
-      user: "1000"
+      user: "agent"
       command: |
         set -eu
         PATH="$HOME/.local/bin:$PATH" rtk init -g
