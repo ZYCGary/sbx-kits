@@ -13,14 +13,17 @@ Current kits:
 
 - `laravel-sail/` — mixin that opens the six outbound hosts the Laravel Sail
   Dockerfile needs that the Balanced network preset misses.
+- `claude-tools/` — mixin that installs the tooling the `claude` agent expects
+  in-sandbox (currently rtk). Designed to be attached to every new sandbox and
+  re-applied with `sbx kit add` as it grows, so it must stay hot-addable.
 
 ## Commands
 
 ```bash
-sbx kit validate ./laravel-sail/           # check spec.yaml before committing
-sbx kit inspect  ./laravel-sail/           # show resolved kit details
-sbx run claude --kit ./laravel-sail/       # new sandbox with the kit
-sbx kit add <sandbox> ./laravel-sail/      # add to an existing sandbox (restarts it)
+sbx kit validate ./<kit>/                  # check spec.yaml before committing
+sbx kit inspect  ./<kit>/                  # show resolved kit details
+sbx run claude --kit ./<kit>/              # new sandbox with the kit
+sbx kit add <sandbox> ./<kit>/             # add to an existing sandbox (restarts it)
 sbx policy ls --wide --source kit          # confirm kit rules are live
 sbx policy log                             # actual blocked hosts — the source of truth
 sbx kit pack/push/pull                     # OCI distribution (unused so far)
@@ -46,6 +49,11 @@ preset's `ppa.launchpad.net`; `deb.nodesource.com` vs `nodesource.com`).
 **Derive allowlists from `sbx policy log`, not from the Dockerfile.** `apt-get update`
 refreshes metadata for every configured source, so the real outbound set is wider than
 the packages a build asks for.
+
+**`setup.install` commands re-run on every restart**, so every one of them must be
+idempotent — check for the installed version and exit early rather than reinstalling.
+They run as root (`user: "0"`) by default; anything that writes into the agent's home,
+such as `rtk init --global`, needs `user: "1000"` or it silently targets root's home.
 
 **Do not allowlist hosts you cannot attribute.** laravel-sail deliberately leaves
 `http-intake.logs.us5.datadoghq.com` blocked because its source is unidentified.

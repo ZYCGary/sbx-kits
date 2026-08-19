@@ -1,0 +1,42 @@
+schemaVersion: "2"
+kind: mixin
+name: claude-tools
+version: 0.1.0
+displayName: Claude agent tooling
+description: Installs and initializes the tooling the Claude agent expects in-sandbox.
+sourceURL: https://github.com/ZYCGary/sbx-kits
+permissions:
+  network:
+    allow:
+      - github.com
+      - release-assets.githubusercontent.com
+setup:
+  install:
+    - description: Install rtk from GitHub releases
+      command: |
+        set -eu
+        RTK_VERSION=0.45.0
+        case "$(uname -m)" in
+          aarch64|arm64)
+            asset=rtk-aarch64-unknown-linux-gnu.tar.gz
+            sha=80a746dd305ef944ff50ef011ae4ce3878dd5ba88dfe35d859d05498191637c3 ;;
+          x86_64|amd64)
+            asset=rtk-x86_64-unknown-linux-musl.tar.gz
+            sha=c4c036fbf181fc55ef329786c8c17e0d427972b053b825944d968a6aafef1ba4 ;;
+          *) echo "rtk: unsupported architecture $(uname -m)" >&2; exit 1 ;;
+        esac
+        if [ "$(rtk --version 2>/dev/null | awk '{print $2}')" = "$RTK_VERSION" ]; then
+          echo "rtk $RTK_VERSION already installed"
+          exit 0
+        fi
+        tmp="$(mktemp -d)"
+        trap 'rm -rf "$tmp"' EXIT
+        curl -fsSL -o "$tmp/rtk.tar.gz" \
+          "https://github.com/rtk-ai/rtk/releases/download/v${RTK_VERSION}/${asset}"
+        echo "$sha  $tmp/rtk.tar.gz" | sha256sum -c -
+        tar -xzf "$tmp/rtk.tar.gz" -C "$tmp" rtk
+        install -m 0755 "$tmp/rtk" /usr/local/bin/rtk
+        rtk --version
+    - description: Register the rtk PreToolUse hook in the agent's global Claude config
+      user: "1000"
+      command: rtk init --global --agent claude
