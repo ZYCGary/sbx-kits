@@ -70,7 +70,8 @@ marketplace and `plugin install` on an installed plugin each print `already …`
 guard cannot prevent an error that does not happen, and its substring match can silently
 skip a needed install.
 
-**`~/.claude/skills` is a persistent store shared read-write across all sandboxes.**
+**`~/.claude/skills` is a persistent store shared read-write across all sandboxes**, on
+macOS at `~/Library/Application Support/com.docker.sandboxes/sandboxes/agent-skills`.
 Anything written there leaks into every other sandbox and survives their removal;
 `sbx create --no-share-skills` opts out. Use plugins, not globally-installed skills, in a
 kit.
