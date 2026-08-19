@@ -4,10 +4,9 @@ Mixin kit that installs the tooling the `claude` agent expects to find inside a
 Docker Sandbox. Intended to be attached to every new sandbox, at creation time.
 
 It declares `requires.agent: claude`, so composition fails loudly if it is ever
-attached to a different base agent. That is honest rather than restrictive — the
-kit registers a Claude Code hook, so it genuinely has nothing to offer another
-agent. (Contrast `laravel-sail`, which is agent-neutral and so declares no
-requirement.)
+attached to a different base agent — the kit registers a Claude Code hook, so it
+genuinely has nothing to offer another agent. (Contrast `laravel-sail`, which is
+agent-neutral and so declares no requirement.)
 
 Currently installs:
 
@@ -19,17 +18,20 @@ Currently installs:
 | `ccstatusline`      | Claude Code status line renderer        | active                       |
 | `caveman`           | Claude Code plugin                      | blocked upstream — see below |
 
+For the schema and CLI this kit is written against, see the
+[kit reference](https://docs.docker.com/ai/sandboxes/customize/kit-reference.md)
+and [kits guide](https://docs.docker.com/ai/sandboxes/customize/kits.md).
+
 ## Usage
 
     sbx create --name <sandbox> --kit /abs/path/to/claude-tools/ claude <workspace>
     sbx run claude --kit /abs/path/to/claude-tools/
 
-**Creation time only.** This kit declares `setup.files`, and `sbx kit add`
-refuses those outright:
+**Creation time only.** This kit ships a `files/` directory, and `sbx kit add`
+refuses that outright:
 
-    ERROR: kit "claude-tools" declares setup.files, which the kit-add recreate
-    flow does not yet apply; recreate the sandbox from scratch via `sbx rm` +
-    `sbx create --kit` to use this kit
+    ERROR: kit "claude-tools" declares files, which the kit-add recreate flow
+    does not yet apply
 
 That matches how this repo works — sandboxes are recreated, never hot-patched —
 and it means updating the kit is always a `sbx rm` + `sbx create`. Two `kit add`
@@ -84,9 +86,8 @@ be touched.
 
 ## Extending it
 
-The kit is applied at creation time, so the **full schema is available** — the
-hot-add subset (`environment.variables`, `setup.install`,
-`permissions.network.allow`) does not constrain it. `setup.files`,
+The kit is applied at creation time, so the **full schema is available** — none
+of the hot-add restrictions apply, and `files/`, `setup.files`,
 `agentInstructions`, and `deny` rules are all fair game.
 
 One rule still holds: **every install command must be idempotent.** They re-run
@@ -95,13 +96,11 @@ sandbox rather than the first. rtk's installer overwrites its own binary,
 `rtk init -g --auto-patch` is safe to repeat, and the plugin steps carry `grep`
 guards. New steps must be equally re-runnable.
 
-Prefer a **static file** under `files/home/` for placing a whole file — it keeps
-one real copy on disk, lands `agent:agent` under `/home/agent`, and needs no
-install step. Reach for `setup.files` only when you need its `mode:`,
-`onlyIfMissing:`, or `${WORKDIR}` expansion. Use `jq` in
-an install step for anything that has to merge into a file other steps also touch,
-`~/.claude/settings.json` above all — ccstatusline's `statusLine` block is the
-example.
+Place a whole file as a real file under `files/home/`, not as an inline
+`setup.files` payload — one copy on disk, byte-exact, no install step. Anything
+that has to *merge* into a file other steps also touch needs `jq` in an install
+step instead, `~/.claude/settings.json` above all; ccstatusline's `statusLine`
+block is the example.
 
 ## Install steps
 
@@ -164,23 +163,21 @@ step; a kit cannot run it.
 
 ### ccstatusline
 
-Two halves: the config ships as a **static file**, and the `statusLine`
-registration is a `jq` merge.
+Two halves: the config ships as a real file, and the `statusLine` registration
+is a `jq` merge.
 
-The config is the real file, at the path it lands on:
+The config lives at the path it lands on, no inline copy:
 
 ```
 claude-tools/files/home/.config/ccstatusline/settings.json
        └── files/home/ maps to /home/agent/
 ```
 
-That is the kit's `files/` convention — `files/home/` populates `/home/agent/`,
-`files/workspace/` the primary workspace path; parent directories are created
-automatically and existing files are overwritten. Verified on this **mixin**
-(the reference only documents the convention under `kind: sandbox`): creation
-reports `→ copy 1 home file(s)`, `sbx kit inspect` reports
-`Files: 1 home, 0 workspace`, and the file lands `agent:agent` mode 0644,
-agent-writable, **md5-identical to the file in this directory**.
+Verified on this **mixin**, though the reference only documents `files/` under
+`kind: sandbox`: creation reports `→ copy 1 home file(s)`, `sbx kit inspect`
+reports `Files: 1 home, 0 workspace`, the file lands `agent:agent` mode 0644 and
+agent-writable, **md5-identical to the file in this directory**, and `sbx kit
+pack` includes `files/` in the ZIP.
 
 **This is the non-interactive import.** ccstatusline 2.2.27 has no import CLI —
 its whole argument surface, read off the shipped `dist/ccstatusline.js`, is
@@ -190,19 +187,13 @@ all it does is write this file. So shipping the file *is* the same operation, an
 re-exporting from the TUI means overwriting this one path — no copy to keep in
 sync.
 
-An earlier revision inlined the same JSON in a `setup.files` entry. Static files
-are strictly better here: one copy instead of a hand-synced pair, no 127-line
-blob in `spec.yaml` (48 lines instead of 185), and byte-exact — the YAML block
-scalar appended a trailing newline the source file does not have (2795 vs 2794
-bytes). `sbx kit pack` includes `files/` in the ZIP, so OCI distribution carries
-it. What is given up: `setup.files`' `mode:`, `onlyIfMissing:`, and
-`description:` fields, none of which this file needs.
+An earlier revision inlined the same JSON in `setup.files`, which cost a
+hand-synced pair of copies, 137 extra lines in `spec.yaml`, and a trailing
+newline the source file does not have. Nothing was given up in the switch: the
+kit was already creation-time-only, since `sbx kit add` refuses `files/` and
+`setup.files` alike.
 
-Either way the kit is creation-time-only — `sbx kit add` refuses both, and with
-`files/` the message is `kit "claude-tools" declares files, which the kit-add
-recreate flow does not yet apply` (tested). So switching cost nothing there.
-
-The `statusLine` block cannot be a static file, because `~/.claude/settings.json`
+The `statusLine` block cannot be a shipped file, because `~/.claude/settings.json`
 is co-owned — rtk's `PreToolUse` hook, `enabledPlugins`, `extraKnownMarketplaces`
 all live there — and both file mechanisms overwrite. A `jq` merge in an install
 step is the only automated path; the TUI's install option is the manual one.
@@ -235,9 +226,10 @@ anything worth keeping belongs back in
 
 ### rtk and i-have-adhd
 
-Both are active. `rtk` needed one detail beyond its docs: plain `rtk init -g` does **not** register the hook — it writes
-`~/.claude/RTK.md`, prints the `PreToolUse` JSON, and leaves you to paste it —
-so the kit passes `--auto-patch`, which writes the hook itself.
+Both are active. `rtk` needed one detail beyond its docs: plain `rtk init -g`
+does **not** register the hook — it writes `~/.claude/RTK.md`, prints the
+`PreToolUse` JSON, and leaves you to paste it — so the kit passes `--auto-patch`,
+which writes the hook itself.
 
 ### caveman — blocked upstream
 
