@@ -39,7 +39,23 @@ sbx kit pack/push/pull                     # OCI distribution (unused so far)
 restart. Keep a kit inside that subset when it is meant to be hot-addable, and split
 anything beyond it into a separate kit rather than widening an existing one.
 
-Kits cannot be removed from a running sandbox; the sandbox must be recreated.
+Kits cannot be removed from a running sandbox; the sandbox must be recreated. A kit
+already attached also cannot be re-added — `sbx kit add` refuses with `duplicate kit
+name` and has no force/update flag — so **updating a kit only reaches new sandboxes**;
+existing ones must be recreated to pick up changes. Always pass `sbx kit add` an absolute
+path: a kit recorded from a relative path later re-resolves against `$HOME` and breaks
+subsequent adds with `path does not exist`.
+
+**A fresh sandbox has no Claude Code marketplaces configured at all**, not even
+`claude-plugins-official`. Any plugin step must add its marketplace first, even for
+plugins whose docs say the official marketplace needs no setup. Guard both the
+marketplace add and the install with a `grep` over `claude plugin marketplace list` /
+`claude plugin list` to stay idempotent.
+
+**Check CLI flags against the sandbox, not the host.** The sandbox ships an older Claude
+Code (2.1.221) whose `claude plugin install` has no `-y` flag; a command copied from the
+host CLI's `--help` fails with `unknown option`. Verify with
+`sbx exec <sandbox> -- <cmd> --help`.
 
 **Network rule matching is exact in both directions.** `example.com` does not match
 `sub.example.com`, and `*.example.com` does not match the bare root. Two of the six

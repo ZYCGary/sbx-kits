@@ -12,12 +12,15 @@ requirement.)
 
 Currently installs:
 
-| Tool  | What it is                                       | How it's installed          |
-| ----- | ------------------------------------------------ | --------------------------- |
-| `rtk` | CLI proxy that trims token usage on dev commands | official `install.sh` script |
+| Item                | What it is                            | Status                         |
+| ------------------- | ------------------------------------- | ------------------------------ |
+| `mattpocock-skills` | 35 skills from the official marketplace | active                       |
+| `rtk`               | CLI proxy that trims dev-command tokens | commented out, pending review |
+| `i-have-adhd`       | Claude Code plugin                      | commented out, pending review |
+| `caveman`           | Claude Code plugin                      | blocked upstream — see below  |
 
-Claude Code plugins and marketplaces are the next additions; each is added
-deliberately rather than in bulk.
+Everything except `mattpocock-skills` is commented out in `spec.yaml` while each
+one is verified individually.
 
 ## Usage
 
@@ -25,13 +28,19 @@ Creating a new sandbox:
 
     sbx run claude --kit ./.sbx/kits/claude-tools/
 
-Adding to a sandbox that already exists, or picking up a newer version of this
-kit:
+Adding to a sandbox that does not have it yet:
 
-    sbx kit add <sandbox> ./.sbx/kits/claude-tools/
+    sbx kit add <sandbox> /abs/path/to/claude-tools/
 
-`sbx kit add` restarts the sandbox and re-runs `setup.install`. Installed
-packages, Docker images, volumes, and agent history survive the restart.
+Two limits found by testing, both worth knowing before relying on this:
+
+- **A kit already attached cannot be re-added.** `sbx kit add` refuses with
+  `duplicate kit name "claude-tools"`, and there is no `--force` or update flag.
+  Picking up a newer version of this kit on a sandbox that already has it means
+  recreating that sandbox. Only brand-new sandboxes get the update for free.
+- **Pass an absolute path.** A kit added as `./claude-tools/` is recorded in a
+  way that later re-resolves against `$HOME` — a subsequent `sbx kit add` of any
+  kit then fails with `path does not exist` for the original one.
 
 ## Host-side prerequisites
 
@@ -79,71 +88,69 @@ recreate. Two consequences to respect when extending it:
 - **No `setup.files` and no `agentInstructions`.** Anything that has to land as
   a file must be written by an `install` command instead, or split into a
   separate kit that is accepted at creation time only.
-- **Every install command must be idempotent.** They re-run on every
-  `sbx kit add`, which is how this kit is meant to be updated. rtk's installer
+- **Every install command must be idempotent.** They re-run whenever the kit is
+  applied. rtk's installer
   overwrites its own binary cleanly and `rtk init -g` is safe to repeat; new
   steps must be equally re-runnable, which for most package installs means a
   guard rather than a bare install command.
 
 ## Install steps
 
-The kit follows the shape the Docker docs use for this exact case — their `nvm`
-example is the same problem, a `curl … | sh` installer that writes into the
-agent's home:
+### mattpocock-skills
 
 ```yaml
-setup:
-  install:
-    - command: "curl -fsSL https://raw.githubusercontent.com/rtk-ai/rtk/refs/heads/master/install.sh | sh"
+    - command: |
+        set -eu
+        claude plugin marketplace list | grep -q claude-plugins-official \
+          || claude plugin marketplace add anthropics/claude-plugins-official
+        claude plugin list | grep -q mattpocock-skills \
+          || claude plugin install mattpocock-skills@claude-plugins-official
       user: "1000"
-      description: Install rtk
-    - command: "rtk init -g"
-      user: "1000"
-      description: Register the rtk hook in the agent's Claude config
+      description: Install the mattpocock-skills plugin
 ```
 
-That is rtk's official installer with no environment overrides, followed by the
-official Claude Code setup step, `rtk init -g`.
+Verified in a scratch sandbox: the plugin installs, reports `✔ enabled`, and
+ships 35 skills.
 
-**Install location.** rtk lands in `~/.local/bin`, the installer's default. That
-is the right place rather than merely a tolerable one: the sandbox's own
-`claude` binary lives at `/home/agent/.local/bin/claude`, and an install step's
-`PATH` is
+The upstream README says `claude plugins install mattpocock-skills` works with
+"no additional setup, because the plugin is in the official marketplace." That
+holds on a host but **not in a fresh sandbox, which has no marketplaces
+configured at all** — not even `claude-plugins-official`. So the marketplace has
+to be added first; the install itself is then exactly what the README describes,
+and updates still arrive from the official source.
 
-    /home/agent/.local/bin:/usr/local/share/npm-global/bin:/usr/local/sbin:...
+Two details that cost a debugging pass each, worth knowing before adding more
+plugins:
 
-so the second step resolves `rtk` with no help. An earlier version of this kit
-redirected the install to `/usr/local/bin` via `RTK_INSTALL_DIR` and prefixed
-the second step with `PATH="$HOME/.local/bin:$PATH"`; both were guarding against
-a problem that does not exist here.
+- **`claude plugin install` has no `-y` flag in-sandbox.** The sandbox ships
+  Claude Code 2.1.221, whose `install` accepts only `--config` and `--scope`;
+  passing `-y` fails outright with `unknown option`. A newer host CLI is not a
+  guide to what the sandbox accepts — check with
+  `sbx exec <sandbox> -- claude plugin install --help`.
+- **The `grep` guards are what make the step idempotent.** Both commands run
+  again on every kit application, and neither is a no-op on its own.
 
-**Why `user: "1000"`.** `setup.install` steps default to root, and root's
-`$HOME` is `/root`. Both steps resolve their target from `$HOME` — the installer
-writes `$HOME/.local/bin`, and `rtk init -g` writes `$HOME/.claude/` — so as
-root they would land in `/root` while still reporting success. Measured with a
-probe kit:
+Per-repo setup (`/setup-matt-pocock-skills`) is interactive and stays a manual
+step; a kit cannot run it.
 
-    default        uid=0    user=root   HOME=/root
-    user: "1000"   uid=1000 user=agent  HOME=/home/agent
+### Not yet enabled
 
-Ownership is a second, independent reason: files a root step creates under
-`/home/agent` stay `root:root`, which would leave the agent unable to rewrite
-its own `settings.json` later. The numeric form is what the Docker examples use;
-`"agent"` also works.
+`rtk` and `i-have-adhd` are written and were verified working before being
+commented out. `rtk` needs one extra step beyond its docs: **`rtk init -g` does
+not register the hook**, it only writes `~/.claude/RTK.md` and prints the JSON
+for you to paste, so the kit has to merge the `PreToolUse` entry into
+`settings.json` itself.
 
-**When these run.** `setup.install` runs once when the kit is applied — at
-sandbox creation or at `sbx kit add` — and *not* on ordinary restarts (verified:
-a stop/start left the step's run counter at 1). So the idempotency that matters
-is across re-applications of this kit, which is exactly the workflow it is built
-for. rtk's installer overwrites its own binary cleanly and `rtk init -g` is safe
-to repeat.
+`caveman` is blocked upstream, not by the kit. Its `plugin.json` declares
+`agents` as an array of file paths, which current Claude Code rejects:
 
-`setup.startup` is the other option and is wrong for this kit: it runs on every
-container start and is meant for daemons, cache warming, and config refresh.
-Nothing here needs to happen more than once per kit application.
+    ✘ Failed to install plugin "caveman@caveman": invalid manifest file
+      Validation errors: agents: Invalid input
 
-The official guide's last instruction — restart Claude Code — has no analogue
-here: the agent has not started yet when `setup.install` runs.
+The same failure is visible on the host, where `claude plugin list` reports
+caveman as `✘ failed to load`. A host that already has it installed will report
+`already installed` and skip validation entirely, which makes the command look
+like it succeeded.
 
 ## Cleanup
 
