@@ -95,8 +95,10 @@ sandbox rather than the first. rtk's installer overwrites its own binary,
 `rtk init -g --auto-patch` is safe to repeat, and the plugin steps carry `grep`
 guards. New steps must be equally re-runnable.
 
-Prefer `setup.files` for placing a whole file — it is declarative, sets `mode`,
-and lands `agent:agent` under `/home/agent` without an install step. Use `jq` in
+Prefer a **static file** under `files/home/` for placing a whole file — it keeps
+one real copy on disk, lands `agent:agent` under `/home/agent`, and needs no
+install step. Reach for `setup.files` only when you need its `mode:`,
+`onlyIfMissing:`, or `${WORKDIR}` expansion. Use `jq` in
 an install step for anything that has to merge into a file other steps also touch,
 `~/.claude/settings.json` above all — ccstatusline's `statusLine` block is the
 example.
@@ -162,35 +164,48 @@ step; a kit cannot run it.
 
 ### ccstatusline
 
-Fully automated, in two halves: the config goes in as an init file, and the
-`statusLine` registration is a `jq` merge.
+Two halves: the config ships as a **static file**, and the `statusLine`
+registration is a `jq` merge.
 
-```yaml
-  files:
-    - path: /home/agent/.config/ccstatusline/settings.json
-      mode: "0644"
-      description: Imports the ccstatusline config, kept in sync with ccstatusline-config.json
-      content: |
-        { … contents of ccstatusline-config.json … }
+The config is the real file, at the path it lands on:
+
+```
+claude-tools/files/home/.config/ccstatusline/settings.json
+       └── files/home/ maps to /home/agent/
 ```
 
-**This `setup.files` entry *is* the non-interactive import.** ccstatusline 2.2.27
-has no import CLI — its whole argument surface, read off the shipped
-`dist/ccstatusline.js`, is `--version`, `--config <path>`, `--hook`, plus
-"stdin is not a TTY → render, TTY → run the TUI". The import/export feature the
-README advertises is a TUI menu item, and all it does is write this file. So
-placing the file directly is not a workaround; it is the same operation.
+That is the kit's `files/` convention — `files/home/` populates `/home/agent/`,
+`files/workspace/` the primary workspace path; parent directories are created
+automatically and existing files are overwritten. Verified on this **mixin**
+(the reference only documents the convention under `kind: sandbox`): creation
+reports `→ copy 1 home file(s)`, `sbx kit inspect` reports
+`Files: 1 home, 0 workspace`, and the file lands `agent:agent` mode 0644,
+agent-writable, **md5-identical to the file in this directory**.
 
-Verified: it lands `agent:agent`, mode 0644, agent-writable — `setup.files` has no
-`user:` field, but a path under `/home/agent` still comes out owned correctly.
-Files are written at *creation*, not on every container start (tested: an
-in-sandbox edit survived a stop/start), so no `onlyIfMissing` guard — this kit is
-the source of truth at creation time.
+**This is the non-interactive import.** ccstatusline 2.2.27 has no import CLI —
+its whole argument surface, read off the shipped `dist/ccstatusline.js`, is
+`--version`, `--config <path>`, `--hook`, plus "stdin is not a TTY → render, TTY
+→ run the TUI". The import/export the README advertises is a TUI menu item, and
+all it does is write this file. So shipping the file *is* the same operation, and
+re-exporting from the TUI means overwriting this one path — no copy to keep in
+sync.
 
-The `statusLine` block cannot be an init file, because `~/.claude/settings.json`
+An earlier revision inlined the same JSON in a `setup.files` entry. Static files
+are strictly better here: one copy instead of a hand-synced pair, no 127-line
+blob in `spec.yaml` (48 lines instead of 185), and byte-exact — the YAML block
+scalar appended a trailing newline the source file does not have (2795 vs 2794
+bytes). `sbx kit pack` includes `files/` in the ZIP, so OCI distribution carries
+it. What is given up: `setup.files`' `mode:`, `onlyIfMissing:`, and
+`description:` fields, none of which this file needs.
+
+Either way the kit is creation-time-only — `sbx kit add` refuses both, and with
+`files/` the message is `kit "claude-tools" declares files, which the kit-add
+recreate flow does not yet apply` (tested). So switching cost nothing there.
+
+The `statusLine` block cannot be a static file, because `~/.claude/settings.json`
 is co-owned — rtk's `PreToolUse` hook, `enabledPlugins`, `extraKnownMarketplaces`
-all live there — and `setup.files` overwrites. A `jq` merge in an install step is
-the only automated path; the TUI's install option is the manual one.
+all live there — and both file mechanisms overwrite. A `jq` merge in an install
+step is the only automated path; the TUI's install option is the manual one.
 
 ```yaml
         settings="$HOME/.claude/settings.json"
@@ -203,27 +218,20 @@ the only automated path; the TUI's install option is the manual one.
 ```
 
 An assignment rather than an append, so a re-run replaces one key and leaves the
-rest alone. Verified in a fresh sandbox: the step runs, the nine keys are all
-present, `rtk hook claude` and both plugins intact, and running the step a second
-time left the file byte-identical.
+rest alone. Verified in a fresh sandbox: all nine keys present, `rtk hook claude`
+and both plugins intact, and a second run left the file byte-identical.
 
 `npx -y ccstatusline@latest` rather than a globally installed binary, so nothing
 has to be installed in the image and every render tracks upstream. The cost,
 measured in a probe sandbox: ~520 ms per render warm versus ~250 ms for an
 installed binary, and **one `registry.npmjs.org` connection per render**
 (policy-log counter moved 11 → 16 across five renders) — so the status line needs
-npm reachable for as long as it is displayed, not just at setup. Dropping
-`@latest` from the command is the cheap way to trade auto-update for fewer
-lookups.
-
-`ccstatusline-config.json` in this directory is the source copy, exported from a
-host TUI session, and the `content:` block must be kept in sync with it by hand.
-`content` is a required field and the kit reference documents no `source:`/`from:`
-alternative, so there is no way to point at the sibling file — the duplication is
-the schema's, not a shortcut.
+npm reachable for as long as it is displayed. Dropping `@latest` trades
+auto-update for fewer lookups.
 
 In-sandbox TUI edits survive restarts but are reverted by the next recreate, so
-anything worth keeping belongs back in `ccstatusline-config.json`.
+anything worth keeping belongs back in
+`files/home/.config/ccstatusline/settings.json`.
 
 ### rtk and i-have-adhd
 
