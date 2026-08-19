@@ -48,9 +48,16 @@ subsequent adds with `path does not exist`.
 
 **A fresh sandbox has no Claude Code marketplaces configured at all**, not even
 `claude-plugins-official`. Any plugin step must add its marketplace first, even for
-plugins whose docs say the official marketplace needs no setup. Guard both the
-marketplace add and the install with a `grep` over `claude plugin marketplace list` /
+plugins whose docs say the official marketplace needs no setup. The `plugin@marketplace`
+suffix does not help — it only selects among *configured* marketplaces, and its failure
+message ("your local copy may be out of date") misdescribes the real cause. Guard both
+the marketplace add and the install with a `grep` over `claude plugin marketplace list` /
 `claude plugin list` to stay idempotent.
+
+**`~/.claude/skills` is a persistent store shared read-write across all sandboxes**, not
+per-sandbox state. Anything a kit or a test writes there leaks into every other sandbox
+and survives their removal; `sbx create --no-share-skills` opts out. Prefer plugins over
+globally-installed skills in a kit, so what the kit adds stays scoped to the sandbox.
 
 **Check CLI flags against the sandbox, not the host.** The sandbox ships an older Claude
 Code (2.1.221) whose `claude plugin install` has no `-y` flag; a command copied from the
@@ -72,6 +79,13 @@ this reason; `laravel-sail`'s six hosts were each earned by an observed failure.
 the script is still useful for *interpreting* the log, just never for populating the
 list. (`apt-get update` is the classic case for why prediction fails: it refreshes
 metadata for every configured source, not just the package you asked for.)
+
+**Accepting a recreate does not mean you need `kind: sandbox`.** A mixin applied at
+creation time (`--kit`) already supports the full schema — verified: `setup.files` and
+other non-hot-addable fields apply fine that way. The hot-add subset constrains only
+`sbx kit add` on a running sandbox. Reach for `kind: sandbox` only to define or replace
+the agent itself — image, entrypoint, command flags, resources — as the docs'
+`claude-safe` example does.
 
 **Set `requires.agent` on any mixin that is agent-specific.** It is mixin-only, takes one
 base-agent name, and is enforced during composition — `claude-tools` uses it because it
