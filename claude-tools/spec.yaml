@@ -37,14 +37,14 @@ setup:
 #         EOF
 #       user: "1000"
 #       description: Register rtk's PreToolUse hook (rtk init only prints it)
-#     - command: |
-#         set -eu
-#         claude plugin marketplace list | grep -q i-have-adhd \
-#           || claude plugin marketplace add ayghri/i-have-adhd
-#         claude plugin list | grep -q i-have-adhd@i-have-adhd \
-#           || claude plugin install i-have-adhd@i-have-adhd
-#       user: "1000"
-#       description: Install the i-have-adhd plugin
+    - command: |
+        set -eu
+        claude plugin marketplace list | grep -q i-have-adhd \
+          || claude plugin marketplace add ayghri/i-have-adhd
+        claude plugin list | grep -q i-have-adhd \
+          || claude plugin install i-have-adhd@i-have-adhd
+      user: "1000"
+      description: Install the i-have-adhd plugin
     - command: |
         set -eu
         claude plugin marketplace list | grep -q claude-plugins-official \
