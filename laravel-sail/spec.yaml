@@ -1,0 +1,14 @@
+schemaVersion: "2"
+kind: mixin
+name: laravel-sail
+displayName: Laravel Sail build allowlist
+description: Outbound allowlist for building the Laravel Sail runtime image in-sandbox.
+permissions:
+  network:
+    allow:
+      - keyserver.ubuntu.com
+      - ppa.launchpadcontent.net
+      - deb.nodesource.com
+      - getcomposer.org
+      - www.postgresql.org
+      - apt.postgresql.org
