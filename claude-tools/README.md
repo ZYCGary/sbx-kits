@@ -1,8 +1,7 @@
 # claude-tools
 
 Mixin kit that installs the tooling the `claude` agent expects to find inside a
-Docker Sandbox. Intended to be attached to every new sandbox, and re-applied to
-existing ones as the kit grows.
+Docker Sandbox. Intended to be attached to every new sandbox, at creation time.
 
 It declares `requires.agent: claude`, so composition fails loudly if it is ever
 attached to a different base agent. That is honest rather than restrictive — the
@@ -12,35 +11,32 @@ requirement.)
 
 Currently installs:
 
-| Item                | What it is                            | Status                         |
-| ------------------- | ------------------------------------- | ------------------------------ |
+| Item                | What it is                              | Status                       |
+| ------------------- | --------------------------------------- | ---------------------------- |
 | `mattpocock-skills` | 35 skills from the official marketplace | active                       |
-| `rtk`               | CLI proxy that trims dev-command tokens | commented out, pending review |
-| `i-have-adhd`       | Claude Code plugin                      | commented out, pending review |
-| `caveman`           | Claude Code plugin                      | blocked upstream — see below  |
-
-Everything except `mattpocock-skills` is commented out in `spec.yaml` while each
-one is verified individually.
+| `rtk`               | CLI proxy that trims dev-command tokens | active                       |
+| `i-have-adhd`       | Claude Code plugin                      | active                       |
+| `ccstatusline`      | Claude Code status line renderer        | active                       |
+| `caveman`           | Claude Code plugin                      | blocked upstream — see below |
 
 ## Usage
 
-Creating a new sandbox:
+    sbx create --name <sandbox> --kit /abs/path/to/claude-tools/ claude <workspace>
+    sbx run claude --kit /abs/path/to/claude-tools/
 
-    sbx run claude --kit ./.sbx/kits/claude-tools/
+**Creation time only.** This kit declares `setup.files`, and `sbx kit add`
+refuses those outright:
 
-Adding to a sandbox that does not have it yet:
+    ERROR: kit "claude-tools" declares setup.files, which the kit-add recreate
+    flow does not yet apply; recreate the sandbox from scratch via `sbx rm` +
+    `sbx create --kit` to use this kit
 
-    sbx kit add <sandbox> /abs/path/to/claude-tools/
-
-Two limits found by testing, both worth knowing before relying on this:
-
-- **A kit already attached cannot be re-added.** `sbx kit add` refuses with
-  `duplicate kit name "claude-tools"`, and there is no `--force` or update flag.
-  Picking up a newer version of this kit on a sandbox that already has it means
-  recreating that sandbox. Only brand-new sandboxes get the update for free.
-- **Pass an absolute path.** A kit added as `./claude-tools/` is recorded in a
-  way that later re-resolves against `$HOME` — a subsequent `sbx kit add` of any
-  kit then fails with `path does not exist` for the original one.
+That matches how this repo works — sandboxes are recreated, never hot-patched —
+and it means updating the kit is always a `sbx rm` + `sbx create`. Two `kit add`
+limits that no longer bite but are worth knowing if that ever changes: a kit
+already attached cannot be re-added (`duplicate kit name`, no `--force`), and a
+kit added by relative path later re-resolves against `$HOME` and breaks
+subsequent adds.
 
 ## Host-side prerequisites
 
@@ -59,7 +55,8 @@ and add only what it names:
 
     sbx policy log                  # the hosts that were actually blocked
     # add those hosts to permissions.network.allow in spec.yaml
-    sbx kit add <sandbox> ./.sbx/kits/claude-tools/
+    sbx rm <sandbox> --force
+    sbx create --name <sandbox> --kit /abs/path/to/claude-tools/ claude <workspace>
 
 Repeat until the install completes — a blocked step can mask the host the *next*
 step needs, so expect more than one pass. Record the reason for each host in the
@@ -70,6 +67,13 @@ leftover.
 | ---- | ---------- |
 | _(none yet — populate from `sbx policy log`)_ | |
 
+Nothing has needed an entry yet: every host these steps touch —
+`raw.githubusercontent.com`, `github.com`, `release-assets.githubusercontent.com`,
+`registry.npmjs.org` — is already permitted by the active preset, confirmed by
+`sbx policy log` showing them forwarded and naming no blocked host for a probe
+sandbox built from this kit. `registry.npmjs.org` stays relevant after creation
+too, since the `npx` status-line command re-resolves the package on every render.
+
 For reference, rtk's installer is known to reach `raw.githubusercontent.com`
 (the script), `github.com` (the `/releases/latest` redirect and the download),
 `release-assets.githubusercontent.com` (where that download redirects), and
@@ -78,21 +82,24 @@ as a hint for interpreting the log, not as a list to paste in — some of it may
 already be covered by the active network preset, and the fallback host may never
 be touched.
 
-## Staying hot-addable
+## Extending it
 
-This kit deliberately stays inside the subset `sbx kit add` supports —
-`environment.variables`, `setup.install`, and `permissions.network.allow`. That
-is the whole point of the kit: adding a tool should be a restart, not a sandbox
-recreate. Two consequences to respect when extending it:
+The kit is applied at creation time, so the **full schema is available** — the
+hot-add subset (`environment.variables`, `setup.install`,
+`permissions.network.allow`) does not constrain it. `setup.files`,
+`agentInstructions`, and `deny` rules are all fair game.
 
-- **No `setup.files` and no `agentInstructions`.** Anything that has to land as
-  a file must be written by an `install` command instead, or split into a
-  separate kit that is accepted at creation time only.
-- **Every install command must be idempotent.** They re-run whenever the kit is
-  applied. rtk's installer
-  overwrites its own binary cleanly and `rtk init -g` is safe to repeat; new
-  steps must be equally re-runnable, which for most package installs means a
-  guard rather than a bare install command.
+One rule still holds: **every install command must be idempotent.** They re-run
+on every creation, and a step that assumes a clean slate will break the second
+sandbox rather than the first. rtk's installer overwrites its own binary,
+`rtk init -g --auto-patch` is safe to repeat, and the plugin steps carry `grep`
+guards. New steps must be equally re-runnable.
+
+Prefer `setup.files` for placing a whole file — it is declarative, sets `mode`,
+and lands `agent:agent` under `/home/agent` without an install step. Use `jq` in
+an install step for anything that has to merge into a file other steps also touch,
+`~/.claude/settings.json` above all — ccstatusline's `statusLine` block is the
+example.
 
 ## Install steps
 
@@ -153,13 +160,78 @@ plugins:
 Per-repo setup (`/setup-matt-pocock-skills`) is interactive and stays a manual
 step; a kit cannot run it.
 
-### Not yet enabled
+### ccstatusline
 
-`rtk` and `i-have-adhd` are written and were verified working before being
-commented out. `rtk` needs one extra step beyond its docs: **`rtk init -g` does
-not register the hook**, it only writes `~/.claude/RTK.md` and prints the JSON
-for you to paste, so the kit has to merge the `PreToolUse` entry into
-`settings.json` itself.
+Fully automated, in two halves: the config goes in as an init file, and the
+`statusLine` registration is a `jq` merge.
+
+```yaml
+  files:
+    - path: /home/agent/.config/ccstatusline/settings.json
+      mode: "0644"
+      description: Imports the ccstatusline config, kept in sync with ccstatusline-config.json
+      content: |
+        { … contents of ccstatusline-config.json … }
+```
+
+**This `setup.files` entry *is* the non-interactive import.** ccstatusline 2.2.27
+has no import CLI — its whole argument surface, read off the shipped
+`dist/ccstatusline.js`, is `--version`, `--config <path>`, `--hook`, plus
+"stdin is not a TTY → render, TTY → run the TUI". The import/export feature the
+README advertises is a TUI menu item, and all it does is write this file. So
+placing the file directly is not a workaround; it is the same operation.
+
+Verified: it lands `agent:agent`, mode 0644, agent-writable — `setup.files` has no
+`user:` field, but a path under `/home/agent` still comes out owned correctly.
+Files are written at *creation*, not on every container start (tested: an
+in-sandbox edit survived a stop/start), so no `onlyIfMissing` guard — this kit is
+the source of truth at creation time.
+
+The `statusLine` block cannot be an init file, because `~/.claude/settings.json`
+is co-owned — rtk's `PreToolUse` hook, `enabledPlugins`, `extraKnownMarketplaces`
+all live there — and `setup.files` overwrites. A `jq` merge in an install step is
+the only automated path; the TUI's install option is the manual one.
+
+```yaml
+        settings="$HOME/.claude/settings.json"
+        mkdir -p "$HOME/.claude"
+        [ -f "$settings" ] || printf '{}' > "$settings"
+        tmp=$(mktemp)
+        jq '.statusLine = {"type": "command", "command": "npx -y ccstatusline@latest", "padding": 0, "refreshInterval": 10}' \
+          "$settings" > "$tmp"
+        mv "$tmp" "$settings"
+```
+
+An assignment rather than an append, so a re-run replaces one key and leaves the
+rest alone. Verified in a fresh sandbox: the step runs, the nine keys are all
+present, `rtk hook claude` and both plugins intact, and running the step a second
+time left the file byte-identical.
+
+`npx -y ccstatusline@latest` rather than a globally installed binary, so nothing
+has to be installed in the image and every render tracks upstream. The cost,
+measured in a probe sandbox: ~520 ms per render warm versus ~250 ms for an
+installed binary, and **one `registry.npmjs.org` connection per render**
+(policy-log counter moved 11 → 16 across five renders) — so the status line needs
+npm reachable for as long as it is displayed, not just at setup. Dropping
+`@latest` from the command is the cheap way to trade auto-update for fewer
+lookups.
+
+`ccstatusline-config.json` in this directory is the source copy, exported from a
+host TUI session, and the `content:` block must be kept in sync with it by hand.
+`content` is a required field and the kit reference documents no `source:`/`from:`
+alternative, so there is no way to point at the sibling file — the duplication is
+the schema's, not a shortcut.
+
+In-sandbox TUI edits survive restarts but are reverted by the next recreate, so
+anything worth keeping belongs back in `ccstatusline-config.json`.
+
+### rtk and i-have-adhd
+
+Both are active. `rtk` needed one detail beyond its docs: plain `rtk init -g` does **not** register the hook — it writes
+`~/.claude/RTK.md`, prints the `PreToolUse` JSON, and leaves you to paste it —
+so the kit passes `--auto-patch`, which writes the hook itself.
+
+### caveman — blocked upstream
 
 `caveman` is blocked upstream, not by the kit. Its `plugin.json` declares
 `agents` as an array of file paths, which current Claude Code rejects:
