@@ -63,9 +63,14 @@ registers a Claude Code hook, while `laravel-sail` omits it because it is agent-
 
 **`setup.install` steps run as root; `setup.startup` steps run as UID 1000.** Sandbox
 images provide a non-root `agent` user at UID 1000, and the field takes the numeric UID,
-not the name. Any install step writing into the agent's home needs an explicit
-`user: "1000"` — without it the write lands in root's home and whatever depended on it
-fails silently rather than loudly.
+not the name. The test for whether a step needs `user: "1000"` is not what it installs
+but **whether it resolves any path from `$HOME`** — as root that is `/root`, so the
+write lands somewhere the agent never looks and the step still reports success. Both of
+`claude-tools`' steps need it for exactly this reason.
+
+**The agent's `~/.local/bin` is on `PATH`** — the sandbox's own `claude` binary lives at
+`/home/agent/.local/bin/claude`. Prefer an installer's `~/.local/bin` default over
+redirecting it to `/usr/local/bin`, which only buys a root requirement.
 
 **`setup.install` commands re-run on every restart**, so every one of them must be
 idempotent — guard with a version check rather than reinstalling blindly.

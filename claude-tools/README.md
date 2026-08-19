@@ -88,34 +88,48 @@ recreate. Two consequences to respect when extending it:
 ## Install steps
 
 **rtk** is installed with the project's own installer, exactly as its README
-documents:
+documents — no environment overrides:
 
     curl -fsSL https://raw.githubusercontent.com/rtk-ai/rtk/refs/heads/master/install.sh | sh
 
-The one deviation is `RTK_INSTALL_DIR=/usr/local/bin` — a variable the installer
-itself supports. Its default is `~/.local/bin`, which is not reliably on `PATH`
-in the sandbox image; the script notices and prints a warning telling you to edit
-your shell profile. Installing to `/usr/local/bin` (the step runs as root)
-avoids editing a dotfile the kit does not otherwise own, and means the `rtk`
-hook resolves no matter which shell Claude Code spawns.
+It lands in `~/.local/bin`, the installer's default. That is the right place
+here rather than merely an acceptable one: the sandbox's own `claude` binary
+lives at `/home/agent/.local/bin/claude`, so the directory is demonstrably on
+the agent's `PATH` already. An earlier version of this kit redirected the
+install to `/usr/local/bin` via `RTK_INSTALL_DIR` out of a worry about `PATH`
+that turned out to be unfounded.
 
 The installer resolves the latest release, verifies it against the release's
 `checksums.txt`, and re-runs cleanly, so it stays current as new versions ship.
-To pin instead, export `RTK_VERSION=vX.Y.Z` alongside `RTK_INSTALL_DIR`.
+To pin, export `RTK_VERSION=vX.Y.Z` in the step.
 
-**`rtk init -g`** carries `user: "1000"`. Sandbox images are required to provide
-a non-root `agent` user at UID 1000, and `setup.install` steps run as root
-(`user: "0"`) unless told otherwise — so without that line, `rtk init -g` would
-write the hook and `RTK.md` into *root's* `~/.claude/` instead of the agent's,
-and the hook would silently never fire. The field takes the numeric UID, not the
-name. The first step keeps the root default because `/usr/local/bin` is not
-writable by the agent user.
+**Both steps carry `user: "1000"`,** and the reason is the same for each: they
+resolve their target from `$HOME`, not from a fixed path. `setup.install` steps
+run as root unless told otherwise, and root's `$HOME` is `/root` — so as root
+the installer would write `/root/.local/bin/rtk` and `rtk init -g` would write
+`/root/.claude/`. Neither is where the agent looks. UID 1000 is the non-root
+`agent` user that every sandbox image is required to provide; the field takes
+the numeric UID, not the name.
 
-(`setup.startup` steps have the opposite default — UID 1000 — so a startup step
-needing root is the case that must be spelled out.)
+(`setup.startup` steps have the opposite default — UID 1000 — so there it is a
+step needing *root* that must be spelled out.)
 
-The official guide says to restart Claude Code afterwards; here the agent has
-not started yet when `setup.install` runs, so there is nothing to restart.
+The `PATH="$HOME/.local/bin:$PATH"` prefix on the second step is a hedge: each
+install step gets a fresh environment, and it is not established that
+`~/.local/bin` is on `PATH` in that context the way it is in the agent's own
+shell. The prefix costs nothing and removes the question.
+
+**Worth verifying on first run:** this all assumes `sbx` sets `$HOME` to
+`/home/agent` for a step declared `user: "1000"`. If it instead keeps root's
+environment while dropping privileges, the installer will fail trying to write
+into `/root` — loudly, and the fix is to hardcode
+`RTK_INSTALL_DIR=/home/agent/.local/bin`. Confirm with:
+
+    sbx exec <sandbox> -- ls -l /home/agent/.local/bin/rtk
+    sbx exec <sandbox> -- grep -c rtk /home/agent/.claude/settings.json
+
+The official guide's final instruction — restart Claude Code — has no analogue
+here: the agent has not started yet when `setup.install` runs.
 
 ## Cleanup
 
