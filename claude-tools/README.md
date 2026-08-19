@@ -4,12 +4,10 @@ Mixin kit that installs the tooling the `claude` agent expects inside a Docker
 Sandbox. Attached to every new sandbox at creation time. Declares
 `requires.agent: claude`, since it registers a Claude Code hook.
 
-| Item                | What it is                              |
-| ------------------- | --------------------------------------- |
-| `rtk`               | CLI proxy that trims dev-command tokens |
-| `i-have-adhd`       | Claude Code plugin                      |
-| `mattpocock-skills` | 35 skills from the official marketplace |
-| `ccstatusline`      | Claude Code status line renderer        |
+- [`rtk`](https://github.com/rtk-ai/rtk)
+- [`i-have-adhd`](https://github.com/ayghri/i-have-adhd)
+- [`mattpocock-skills`](https://www.aihero.dev/skills)
+- [`ccstatusline`](https://github.com/sirmalloc/ccstatusline)
 
 Schema and CLI:
 [kit reference](https://docs.docker.com/ai/sandboxes/customize/kit-reference.md),
