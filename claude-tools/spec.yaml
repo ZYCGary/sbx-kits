@@ -7,36 +7,14 @@ description: Installs and initializes the tooling the Claude agent expects in-sa
 sourceURL: https://github.com/ZYCGary/sbx-kits
 requires:
   agent: claude
-# No permissions.network block on purpose. Hosts are added only after a real
-# failure names them in `sbx policy log` — see the README.
 setup:
   install:
-#     - command: "curl -fsSL https://raw.githubusercontent.com/rtk-ai/rtk/refs/heads/master/install.sh | sh"
-#       user: "1000"
-#       description: Install rtk
-#     - command: "rtk init -g"
-#       user: "1000"
-#       description: Write rtk's RTK.md guidance into the agent's Claude config
-#     - command: |
-#         python3 - <<'EOF'
-#         import json, pathlib
-#         p = pathlib.Path.home() / ".claude" / "settings.json"
-#         s = json.loads(p.read_text()) if p.exists() else {}
-#         pre = s.setdefault("hooks", {}).setdefault("PreToolUse", [])
-#         entry = next((e for e in pre if e.get("matcher") == "Bash"), None)
-#         if entry is None:
-#             entry = {"matcher": "Bash", "hooks": []}
-#             pre.append(entry)
-#         hooks = entry.setdefault("hooks", [])
-#         if not any(h.get("command") == "rtk hook claude" for h in hooks):
-#             hooks.append({"type": "command", "command": "rtk hook claude"})
-#             p.write_text(json.dumps(s, indent=2) + "\n")
-#             print("rtk hook registered")
-#         else:
-#             print("rtk hook already registered")
-#         EOF
-#       user: "1000"
-#       description: Register rtk's PreToolUse hook (rtk init only prints it)
+    - command: |
+        set -eu
+        curl -fsSL https://raw.githubusercontent.com/rtk-ai/rtk/master/install.sh | sh
+        rtk init -g --auto-patch < /dev/null
+      user: "1000"
+      description: Install rtk and register its PreToolUse hook
     - command: |
         set -eu
         claude plugin marketplace list | grep -q i-have-adhd \
@@ -57,9 +35,3 @@ setup:
           || claude plugin install mattpocock-skills@claude-plugins-official
       user: "1000"
       description: Install the mattpocock-skills plugin
-#     - command: |
-#         set -eu
-#         [ -d "$HOME/.claude/skills/caveman" ] \
-#           || npx -y skills add JuliusBrussee/caveman --skill '*' --agent claude-code --yes --global
-#       user: "1000"
-#       description: Install caveman as skills (its plugin manifest is rejected by Claude Code)
