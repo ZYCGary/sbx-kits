@@ -114,10 +114,21 @@ ships 35 skills.
 
 The upstream README says `claude plugins install mattpocock-skills` works with
 "no additional setup, because the plugin is in the official marketplace." That
-holds on a host but **not in a fresh sandbox, which has no marketplaces
-configured at all** — not even `claude-plugins-official`. So the marketplace has
-to be added first; the install itself is then exactly what the README describes,
-and updates still arrive from the official source.
+holds on a host but not in a sandbox. Tested directly — the kit was run once with
+the marketplace line removed and only the README's command left:
+
+    $ claude plugin marketplace list
+    No marketplaces configured
+
+    $ claude plugins install mattpocock-skills
+    ✘ Failed to install plugin "mattpocock-skills":
+      Plugin "mattpocock-skills" not found in any configured marketplace
+
+**A fresh sandbox has no marketplaces at all**, not even
+`claude-plugins-official`, so there is nothing for the README's command to
+resolve against. Adding the marketplace first is the minimum fix; the install
+itself is then exactly what the README describes, from the same official source,
+so updates still arrive normally.
 
 Two details that cost a debugging pass each, worth knowing before adding more
 plugins:
