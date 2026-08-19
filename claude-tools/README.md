@@ -103,11 +103,20 @@ recreate. Two consequences to respect when extending it:
         set -eu
         claude plugin marketplace list | grep -q claude-plugins-official \
           || claude plugin marketplace add anthropics/claude-plugins-official
+      user: "1000"
+      description: Configure the official Claude Code marketplace
+    - command: |
+        set -eu
         claude plugin list | grep -q mattpocock-skills \
           || claude plugin install mattpocock-skills@claude-plugins-official
       user: "1000"
       description: Install the mattpocock-skills plugin
 ```
+
+The marketplace is its own step rather than a preamble to the install. It is
+shared infrastructure — every future plugin from the official marketplace
+depends on it and none of them should re-declare it — and splitting it means a
+failure names which half broke instead of pointing at a two-command block.
 
 Verified in a scratch sandbox: the plugin installs, reports `✔ enabled`, and
 ships 35 skills.
@@ -138,7 +147,7 @@ plugins:
   passing `-y` fails outright with `unknown option`. A newer host CLI is not a
   guide to what the sandbox accepts — check with
   `sbx exec <sandbox> -- claude plugin install --help`.
-- **The `grep` guards are what make the step idempotent.** Both commands run
+- **The `grep` guards are what make each step idempotent.** Both commands run
   again on every kit application, and neither is a no-op on its own.
 
 Per-repo setup (`/setup-matt-pocock-skills`) is interactive and stays a manual

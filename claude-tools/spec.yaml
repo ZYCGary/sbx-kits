@@ -49,6 +49,10 @@ setup:
         set -eu
         claude plugin marketplace list | grep -q claude-plugins-official \
           || claude plugin marketplace add anthropics/claude-plugins-official
+      user: "1000"
+      description: Configure the official Claude Code marketplace
+    - command: |
+        set -eu
         claude plugin list | grep -q mattpocock-skills \
           || claude plugin install mattpocock-skills@claude-plugins-official
       user: "1000"
