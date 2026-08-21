@@ -3,7 +3,10 @@ agent: claude
 workspace: .
 
 kits:
-  - ./claude-tools
+  - ./rtk/claude
+  - ./ccstatusline
+  - ./i-have-adhd/claude
+  - ./mattpocock-skills/claude
 
 secrets:
   github:

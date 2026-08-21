@@ -1,0 +1,38 @@
+schemaVersion: "2"
+kind: mixin
+name: ccstatusline
+version: 0.1.0
+displayName: ccstatusline
+description: Ships a ccstatusline configuration and registers it as the Claude Code status line, merging into ~/.claude/settings.json so every other setting is preserved.
+sourceURL: https://github.com/ZYCGary/sbx-kits
+# ccstatusline speaks Claude Code's status-line protocol (session JSON on stdin),
+# so there is no other harness to support and no per-harness subdirectory — see
+# the sibling rtk/ and i-have-adhd/ kits for that layout. `requires.agent` is
+# enforced during composition, which is the wanted behaviour here.
+requires:
+  agent: claude
+agentInstructions:
+  content: |
+    ## Status line
+
+    This sandbox renders its Claude Code status line with
+    [ccstatusline](https://github.com/sirmalloc/ccstatusline), registered under
+    `statusLine` in ~/.claude/settings.json and configured by
+    ~/.config/ccstatusline/settings.json. It shows the upstream repo, git
+    branch, working-tree changes, CI status, model, thinking effort, context
+    bar, and session/weekly usage.
+setup:
+  install:
+    # jq merge, never a whole-file write: rtk's hook and the plugin
+    # registrations live in the same settings.json.
+    - command: |
+        set -eu
+        settings="$HOME/.claude/settings.json"
+        mkdir -p "$HOME/.claude"
+        [ -f "$settings" ] || printf '{}' > "$settings"
+        tmp=$(mktemp)
+        jq '.statusLine = {"type": "command", "command": "npx -y ccstatusline@latest", "padding": 0, "refreshInterval": 10}' \
+          "$settings" > "$tmp"
+        mv "$tmp" "$settings"
+      user: "1000"
+      description: Register ccstatusline as the Claude Code status line

@@ -16,16 +16,38 @@ the reference rather than trusting this file on any question of schema.
 ## What this repo is
 
 A collection of sbx kits. There is no application code, no build step, and no test suite.
-Each top-level directory is one kit: a `spec.yaml`, a `README.md` documenting it, and
-optionally a `files/` directory.
+A kit is a directory holding a `spec.yaml` and optionally a `files/` directory; the
+`README.md` documenting it sits one level up when the tool has harness variants.
 
-- `laravel-sail/` — mixin that opens the six outbound hosts the Laravel Sail
-  Dockerfile needs that the Balanced network preset misses.
-- `claude-tools/` — mixin that installs the tooling the `claude` agent expects
-  in-sandbox (rtk, two plugins, ccstatusline). Attached to every new sandbox at
-  creation time; it ships a `files/` directory, so it is creation-time-only.
-- `pnpm/` — mixin that installs pnpm, one install step. Agent-neutral, no `files/`,
-  so it is hot-addable. Does not enable `pnpm add -g`; see its README.
+**Two layouts, and the shape is the signal.** A tool that only ever targets one harness
+is a flat top-level kit. A tool whose upstream supports several gets a directory per
+harness, because `requires.agent` takes exactly one base-agent name — so multi-harness
+support cannot be one kit:
+
+    laravel-sail/spec.yaml          # agent-neutral
+    pnpm/spec.yaml                  # agent-neutral
+    ccstatusline/spec.yaml          # Claude-only by nature (statusLine protocol)
+    rtk/README.md
+    rtk/claude/spec.yaml            # name: rtk-claude
+    i-have-adhd/claude/spec.yaml    # name: i-have-adhd-claude
+    mattpocock-skills/claude/spec.yaml
+
+- `laravel-sail/` — opens the six outbound hosts the Laravel Sail Dockerfile needs
+  that the Balanced network preset misses.
+- `pnpm/` — installs pnpm, one install step. Hot-addable. Does not enable
+  `pnpm add -g`; see its README.
+- `ccstatusline/` — ships the ccstatusline config and registers `statusLine`. Has
+  `files/`, so creation-time only.
+- `rtk/claude/` — installs rtk and registers its PreToolUse hook. Upstream covers 16
+  harnesses; only the verified one is here.
+- `i-have-adhd/claude/`, `mattpocock-skills/claude/` — one Claude Code plugin each,
+  marketplace add + install.
+
+Only add a harness variant once you have actually run it. An unverified variant is
+worse than a missing one, because it fails silently.
+
+These were one `claude-tools/` kit until 2026-08-21. Anything attached to a live
+sandbox as `claude-tools` predates the split.
 
 ## Commands
 
@@ -122,11 +144,41 @@ and `sbx exec` the file back.
 
 ## Conventions for a new kit
 
+**One kit is one capability, not a bundle.** This follows
+[`docker/sbx-kits-contrib`](https://github.com/docker/sbx-kits-contrib), where ~40 kits
+are almost all a single tool (`vale`, `trivy`, `mise`, `playwright`) and even Claude-paired
+concerns get their own kit each (`claude-mem`, `claude-ollama`, `claude-sbx-statusline` —
+a status line alone is a kit). The reason is that a kit is the unit of distribution and
+versioning, not just of attachment: upstream publishes each as its own OCI artifact, and
+CONTRIBUTING.md calls a kit's network allowlist "the **complete** outbound contract" —
+bundling two tools produces an allowlist whose entries cannot be attributed. Composition
+happens at the CLI, with repeated `--kit`, or via `kits:` in `.sbxenv.yaml`.
+
+**`requires.agent` is a hard gate, not a hint.** The reference: it "takes one base-agent
+name. It is validated as a kit name and enforced during composition." So a kit that
+declares it does not degrade on another agent — it fails to compose. There is no
+`requires.agents` list, no version constraint, and **no documented way for an install step
+to learn which agent it is running under** — no injected `SANDBOX_AGENT` or equivalent, so
+detection means probing for a binary or config directory.
+
+That is why a multi-harness tool becomes one kit *per harness* under a shared directory
+(`rtk/claude/`, `rtk/gemini/`) with `name: <tool>-<harness>`, rather than one kit that
+detects the agent at install time. The nesting keeps the enforced gate and a clear
+composition-time error, and lets coverage grow by adding a directory you have verified
+instead of extending a branch chain full of variants you have not. Upstream is flat and
+expresses the same thing in the name (`claude-mem`, `claude-ollama`), so mirror the naming
+even when nesting; `name` and the directory path deliberately diverge here.
+
+Name a kit after the tool, not the harness — a harness suffix (`rtk-claude`) only where
+variants exist. `files/` cannot be shared between sibling variants; each needs its own copy.
+
 Use `kind: mixin` unless you are defining or replacing the agent itself, and set
-`requires.agent` when the kit is agent-specific (`claude-tools` does, because it registers
-a Claude Code hook; `laravel-sail` does not, because it is agent-neutral). Prefer a
-`files/` entry over `setup.files` for a whole file, and follow the shape of the official
-example kits where they cover the case.
+`requires.agent` only when the kit truly cannot work elsewhere — say in the spec *why*, and
+whether that is by nature (`ccstatusline` speaks Claude Code's status-line protocol) or just
+this variant (`rtk/claude/` is one of upstream's 16 harness paths). Give every kit an
+`agentInstructions.content` block telling the agent what
+this sandbox now has and how to use it. Prefer a `files/` entry over `setup.files` for a
+whole file, and follow the shape of the official example kits where they cover the case.
 
 Each kit needs a `README.md` following `laravel-sail/README.md`'s structure: what breaks
 without it, usage for both new and existing sandboxes, host-side prerequisites, a table

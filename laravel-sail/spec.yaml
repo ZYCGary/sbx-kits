@@ -3,6 +3,14 @@ kind: mixin
 name: laravel-sail
 displayName: Laravel Sail build allowlist
 description: Outbound allowlist for building the Laravel Sail runtime image in-sandbox.
+agentInstructions:
+  content: |
+    ## Laravel Sail
+
+    The outbound hosts the Sail runtime image needs at build time (ondrej PPA and
+    its keyserver, nodesource, composer, pgdg) are allowlisted, so
+    `./vendor/bin/sail build` works here. If a build step is still blocked, read
+    the host out of `sbx policy log` — do not infer it from the Dockerfile.
 permissions:
   network:
     allow:
