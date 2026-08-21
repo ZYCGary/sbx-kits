@@ -1,0 +1,24 @@
+schemaVersion: "2"
+kind: mixin
+name: i-have-adhd-claude
+version: 0.1.0
+displayName: i-have-adhd plugin for Claude Code
+description: Registers the ayghri/i-have-adhd marketplace and installs the i-have-adhd plugin into Claude Code.
+sourceURL: https://github.com/ZYCGary/sbx-kits
+requires:
+  agent: claude
+agentInstructions:
+  content: |
+    ## i-have-adhd
+
+    The [i-have-adhd](https://github.com/ayghri/i-have-adhd) plugin is
+    installed. Its commands and skills are listed in the session's
+    available-skills reminder — use them from there rather than assuming names.
+setup:
+  install:
+    - command: |
+        set -eu
+        claude plugin marketplace add ayghri/i-have-adhd
+        claude plugin install i-have-adhd@i-have-adhd
+      user: "1000"
+      description: Install the i-have-adhd plugin (marketplace add first; a fresh sandbox has none configured)

@@ -1,46 +1,40 @@
 # laravel-sail
 
-Mixin kit that opens the outbound hosts required to build the Laravel Sail
-runtime image inside a Docker Sandbox. Agent-neutral. Network rules only — no
-credentials, no install commands, no files — so it is hot-addable.
+Mixin kit that opens the outbound hosts needed to build the Laravel Sail runtime image.
+Agent-neutral, network rules only, no `files/` — hot-addable.
 
-Without it the Sail Dockerfile fails at `apt-get install php8.4-*` with exit
-code 100: the ondrej PPA and its GPG keyserver are blocked by default-deny.
-
-Schema and CLI:
-[kit reference](https://docs.docker.com/ai/sandboxes/customize/kit-reference.md),
-[kits guide](https://docs.docker.com/ai/sandboxes/customize/kits.md).
+Without it the Sail Dockerfile fails at `apt-get install php8.4-*` with exit code 100.
 
 ## Usage
 
     sbx run claude --kit /abs/path/to/laravel-sail/       # new sandbox
     sbx kit add <sandbox> /abs/path/to/laravel-sail/      # existing one, restarts it
 
+No host-side prerequisites.
+
 ## The hosts
 
 The Balanced preset already covers `dl.yarnpkg.com`, `registry.npmjs.org`,
-`**.packagist.org`, `playwright.azureedge.net`, and `ports.ubuntu.com`. These
-are the gaps:
+`**.packagist.org`, `playwright.azureedge.net`, and `ports.ubuntu.com`. The gaps:
 
-| Host                       | Dockerfile step                 | Why the preset misses it                                             |
-| -------------------------- | ------------------------------- | -------------------------------------------------------------------- |
-| `keyserver.ubuntu.com`     | ondrej PPA GPG key              | not in any preset group                                              |
-| `ppa.launchpadcontent.net` | all `php8.4-*` packages         | preset has `ppa.launchpad.net` — a different domain                  |
-| `deb.nodesource.com`       | nodejs key and packages         | preset has `nodesource.com`; an exact rule does not match subdomains |
-| `getcomposer.org`          | composer installer script       | not in any preset group                                              |
-| `www.postgresql.org`       | pgdg signing key (ACCC4CF8.asc) | not in any preset group                                              |
-| `apt.postgresql.org`       | `postgresql-client-*`           | not in any preset group                                              |
+| Host | Dockerfile step | Preset |
+| ---- | --------------- | ------ |
+| `keyserver.ubuntu.com` | ondrej PPA GPG key | absent |
+| `ppa.launchpadcontent.net` | all `php8.4-*` packages | has `ppa.launchpad.net`, a different domain |
+| `deb.nodesource.com` | nodejs key and packages | has `nodesource.com`; exact rules do not match subdomains |
+| `getcomposer.org` | composer installer script | absent |
+| `www.postgresql.org` | pgdg signing key (ACCC4CF8.asc) | absent |
+| `apt.postgresql.org` | `postgresql-client-*` | absent |
 
 If the list drifts, add from `sbx policy log`, never from the Dockerfile.
 
-`http-intake.logs.us5.datadoghq.com` is deliberately **not** allowlisted — the
-source of those attempts is unidentified. Default-deny is holding it.
+`http-intake.logs.us5.datadoghq.com` is deliberately **not** allowlisted — source
+unattributed, default-deny is holding it.
 
 ## Cleanup
 
-No host state; the rules disappear with the sandboxes that loaded the kit. If you
-previously added these hosts globally with `sbx policy allow network`, those
-rules survive — confirm the kit's are live, then drop the globals:
+No host state; rules disappear with the sandboxes that loaded the kit. If these hosts
+were previously allowed globally, those rules survive:
 
     sbx policy ls --wide --source kit    # expect kit:laravel-sail
     sbx policy rm network --resource keyserver.ubuntu.com

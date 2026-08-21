@@ -1,0 +1,25 @@
+schemaVersion: "2"
+kind: mixin
+name: rtk-claude
+version: 0.1.0
+displayName: rtk (Rust Token Killer) for Claude Code
+description: Installs rtk and registers its PreToolUse hook in ~/.claude/settings.json.
+sourceURL: https://github.com/ZYCGary/sbx-kits
+requires:
+  agent: claude
+agentInstructions:
+  content: |
+    ## rtk
+
+    `rtk` is installed and its PreToolUse hook is registered: Bash commands are
+    rewritten to run through it (`git status` becomes `rtk git status`) and come
+    back trimmed. Do not wrap commands in `rtk` yourself. `rtk proxy <cmd>` runs
+    a command unfiltered; `rtk gain` reports what the filtering saved.
+setup:
+  install:
+    - command: |
+        set -eu
+        curl -fsSL https://raw.githubusercontent.com/rtk-ai/rtk/master/install.sh | sh
+        rtk init -g --auto-patch < /dev/null
+      user: "1000"
+      description: Install rtk and register its PreToolUse hook (--auto-patch required; a bare init writes no hook and exits 0)

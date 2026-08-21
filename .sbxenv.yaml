@@ -1,0 +1,14 @@
+schemaVersion: "1"
+agent: claude
+workspace: .
+
+kits:
+  - ./rtk/claude
+  - ./ccstatusline
+  - ./i-have-adhd/claude
+  - ./caveman/claude
+  - ./mattpocock-skills/claude
+
+secrets:
+  github:
+    command: gh auth token --user ZYCGary
