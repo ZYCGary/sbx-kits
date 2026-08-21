@@ -6,6 +6,7 @@ kits:
   - ./rtk/claude
   - ./ccstatusline
   - ./i-have-adhd/claude
+  - ./caveman/claude
   - ./mattpocock-skills/claude
 
 secrets:

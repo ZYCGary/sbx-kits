@@ -1,0 +1,24 @@
+schemaVersion: "2"
+kind: mixin
+name: caveman-claude
+version: 0.1.0
+displayName: caveman plugin for Claude Code
+description: Registers the JuliusBrussee/caveman marketplace and installs the caveman plugin into Claude Code.
+sourceURL: https://github.com/ZYCGary/sbx-kits
+requires:
+  agent: claude
+agentInstructions:
+  content: |
+    ## caveman
+
+    The [caveman](https://github.com/JuliusBrussee/caveman) plugin is installed:
+    a skill plus a SessionStart hook that switches responses to a compressed
+    telegraphic register to cut output tokens. Invoke with `/caveman`.
+setup:
+  install:
+    - command: |
+        set -eu
+        claude plugin marketplace add JuliusBrussee/caveman
+        claude plugin install caveman@caveman
+      user: "1000"
+      description: Install the caveman plugin (marketplace add first; a fresh sandbox has none configured)

@@ -19,6 +19,7 @@ one harness; one subdirectory per harness otherwise, with the `README.md` one le
     rtk/README.md
     rtk/claude/spec.yaml                 # name: rtk-claude
     i-have-adhd/claude/spec.yaml         # name: i-have-adhd-claude
+    caveman/claude/spec.yaml             # name: caveman-claude
     mattpocock-skills/claude/spec.yaml   # name: mattpocock-skills-claude
 
 Only `ccstatusline/` ships `files/`. These were one `claude-tools/` kit until
