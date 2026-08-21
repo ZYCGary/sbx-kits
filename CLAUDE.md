@@ -24,6 +24,8 @@ optionally a `files/` directory.
 - `claude-tools/` — mixin that installs the tooling the `claude` agent expects
   in-sandbox (rtk, two plugins, ccstatusline). Attached to every new sandbox at
   creation time; it ships a `files/` directory, so it is creation-time-only.
+- `pnpm/` — mixin that installs pnpm, one install step. Agent-neutral, no `files/`,
+  so it is hot-addable. Does not enable `pnpm add -g`; see its README.
 
 ## Commands
 

@@ -1,0 +1,14 @@
+schemaVersion: "2"
+kind: mixin
+name: pnpm
+version: 0.1.0
+displayName: pnpm package manager
+description: Installs pnpm into the agent's npm global prefix.
+sourceURL: https://github.com/ZYCGary/sbx-kits
+setup:
+  install:
+    - command: |
+        set -eu
+        npm install -g pnpm
+      user: "1000"
+      description: Install pnpm into the agent's npm global prefix
