@@ -1,0 +1,10 @@
+schemaVersion: "1"
+agent: claude
+workspace: .
+
+kits:
+  - ./claude-tools
+
+secrets:
+  github:
+    command: gh auth token --user ZYCGary
