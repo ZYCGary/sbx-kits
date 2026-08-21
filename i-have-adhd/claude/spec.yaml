@@ -5,9 +5,6 @@ version: 0.1.0
 displayName: i-have-adhd plugin for Claude Code
 description: Registers the ayghri/i-have-adhd marketplace and installs the i-have-adhd plugin into Claude Code.
 sourceURL: https://github.com/ZYCGary/sbx-kits
-# Upstream ships an install path for 14+ harnesses, each with its own command.
-# This is the Claude Code one; a sibling directory is where another harness
-# goes — see ../README.md.
 requires:
   agent: claude
 agentInstructions:
@@ -19,12 +16,9 @@ agentInstructions:
     available-skills reminder — use them from there rather than assuming names.
 setup:
   install:
-    # A fresh sandbox has no marketplaces configured at all, so the marketplace
-    # add is required before the install. Both commands are idempotent at
-    # 2.1.221 (they print `already ...` and exit 0), so no grep guard.
     - command: |
         set -eu
         claude plugin marketplace add ayghri/i-have-adhd
         claude plugin install i-have-adhd@i-have-adhd
       user: "1000"
-      description: Install the i-have-adhd plugin
+      description: Install the i-have-adhd plugin (marketplace add first; a fresh sandbox has none configured)

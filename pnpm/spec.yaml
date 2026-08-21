@@ -9,10 +9,9 @@ agentInstructions:
   content: |
     ## pnpm
 
-    `pnpm` is installed in the agent's npm global prefix, and honours a repo's
-    `packageManager` pin itself (corepack is deliberately not used — the image's
-    copy is too old to load pnpm 11). Project-level commands work; `pnpm add -g`
-    does not, because pnpm's global bin dir is not on `PATH`.
+    `pnpm` is installed in the agent's npm global prefix and honours a repo's
+    `packageManager` pin itself; corepack is not used. Project-level commands
+    work, `pnpm add -g` does not — its global bin dir is not on `PATH`.
 setup:
   install:
     - command: |

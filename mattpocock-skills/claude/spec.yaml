@@ -5,9 +5,6 @@ version: 0.1.0
 displayName: mattpocock-skills plugin for Claude Code
 description: Registers the official Claude plugin marketplace and installs the mattpocock-skills plugin into Claude Code.
 sourceURL: https://github.com/ZYCGary/sbx-kits
-# Distributed through anthropics/claude-plugins-official, so unlike rtk and
-# i-have-adhd there is no verified path for another harness — the subdirectory
-# is a slot, not a promise. See ../README.md.
 requires:
   agent: claude
 agentInstructions:
@@ -20,12 +17,9 @@ agentInstructions:
     there rather than assuming names.
 setup:
   install:
-    # A fresh sandbox has no marketplaces configured at all, not even
-    # claude-plugins-official, so the marketplace add is required before the
-    # install. Both commands are idempotent at 2.1.221, so no grep guard.
     - command: |
         set -eu
         claude plugin marketplace add anthropics/claude-plugins-official
         claude plugin install mattpocock-skills@claude-plugins-official
       user: "1000"
-      description: Install the mattpocock-skills plugin
+      description: Install the mattpocock-skills plugin (marketplace add first; a fresh sandbox has none configured)

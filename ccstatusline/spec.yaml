@@ -3,12 +3,8 @@ kind: mixin
 name: ccstatusline
 version: 0.1.0
 displayName: ccstatusline
-description: Ships a ccstatusline configuration and registers it as the Claude Code status line, merging into ~/.claude/settings.json so every other setting is preserved.
+description: Ships a ccstatusline configuration and registers it as the Claude Code status line.
 sourceURL: https://github.com/ZYCGary/sbx-kits
-# ccstatusline speaks Claude Code's status-line protocol (session JSON on stdin),
-# so there is no other harness to support and no per-harness subdirectory — see
-# the sibling rtk/ and i-have-adhd/ kits for that layout. `requires.agent` is
-# enforced during composition, which is the wanted behaviour here.
 requires:
   agent: claude
 agentInstructions:
@@ -23,8 +19,6 @@ agentInstructions:
     bar, and session/weekly usage.
 setup:
   install:
-    # jq merge, never a whole-file write: rtk's hook and the plugin
-    # registrations live in the same settings.json.
     - command: |
         set -eu
         settings="$HOME/.claude/settings.json"
@@ -35,4 +29,4 @@ setup:
           "$settings" > "$tmp"
         mv "$tmp" "$settings"
       user: "1000"
-      description: Register ccstatusline as the Claude Code status line
+      description: Register ccstatusline as the Claude Code status line (jq merge; the same file holds rtk's hook)

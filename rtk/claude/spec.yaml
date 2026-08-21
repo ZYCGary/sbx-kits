@@ -3,35 +3,23 @@ kind: mixin
 name: rtk-claude
 version: 0.1.0
 displayName: rtk (Rust Token Killer) for Claude Code
-description: Installs rtk and registers its PreToolUse hook in ~/.claude/settings.json, so Bash tool calls are transparently proxied through rtk's output filters.
+description: Installs rtk and registers its PreToolUse hook in ~/.claude/settings.json.
 sourceURL: https://github.com/ZYCGary/sbx-kits
-# rtk init targets many harnesses; Claude Code is its default, which is why no
-# selector flag appears below. `requires.agent` is enforced during composition,
-# so this kit is the Claude variant and a sibling directory is where another
-# harness goes — see ../README.md for the selector table.
 requires:
   agent: claude
 agentInstructions:
   content: |
     ## rtk
 
-    `rtk` is installed and its PreToolUse hook is registered, so ordinary Bash
-    commands are rewritten to run through it (`git status` becomes
-    `rtk git status`) and come back with most of their output trimmed. Do not
-    wrap commands in `rtk` yourself — the hook does it. `rtk proxy <cmd>` runs a
-    command unfiltered when you need the raw output; `rtk gain` reports what the
-    filtering saved.
+    `rtk` is installed and its PreToolUse hook is registered: Bash commands are
+    rewritten to run through it (`git status` becomes `rtk git status`) and come
+    back trimmed. Do not wrap commands in `rtk` yourself. `rtk proxy <cmd>` runs
+    a command unfiltered; `rtk gain` reports what the filtering saved.
 setup:
   install:
-    # --auto-patch is mandatory here, despite upstream recommending a bare
-    # `rtk init -g`. Measured at rtk 0.45.0: without it, init sees the
-    # non-interactive stdin, answers its own [y/N] patch prompt with N, prints a
-    # MANUAL STEP block, writes no hook -- and exits 0, so `set -eu` sees
-    # success. It patches by merging, so it composes with the ccstatusline kit
-    # writing statusLine into the same file, in either order.
     - command: |
         set -eu
         curl -fsSL https://raw.githubusercontent.com/rtk-ai/rtk/master/install.sh | sh
         rtk init -g --auto-patch < /dev/null
       user: "1000"
-      description: Install rtk and register its PreToolUse hook in ~/.claude/settings.json
+      description: Install rtk and register its PreToolUse hook (--auto-patch required; a bare init writes no hook and exits 0)
