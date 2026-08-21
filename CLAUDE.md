@@ -28,7 +28,8 @@ Only `ccstatusline/` ships `files/`. These were one `claude-tools/` kit until
 ## Commands
 
 ```bash
-sbx kit validate ./<kit>/                  # before committing
+make validate                              # every kit; add a line per new kit
+sbx kit validate ./<kit>/                  # one kit
 sbx kit inspect  ./<kit>/
 sbx create --name <s> --kit /abs/<kit>/ claude <ws>   # how kits are applied here
 sbx run claude --kit ./<kit>/
