@@ -4,6 +4,7 @@ workspace: .
 
 kits:
   - ./rtk/claude
+  - ./codegraph/claude
   - ./ccstatusline
   - ./i-have-adhd/claude
   - ./caveman/claude

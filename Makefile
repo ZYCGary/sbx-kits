@@ -9,3 +9,4 @@ validate:
 	sbx kit validate ./i-have-adhd/claude/
 	sbx kit validate ./caveman/claude/
 	sbx kit validate ./mattpocock-skills/claude/
+	sbx kit validate ./codegraph/claude/
