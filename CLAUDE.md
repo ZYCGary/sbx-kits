@@ -15,6 +15,7 @@ one harness; one subdirectory per harness otherwise, with the `README.md` one le
 
     laravel-sail/spec.yaml               # agent-neutral
     pnpm/spec.yaml                       # agent-neutral
+    buf/spec.yaml                        # agent-neutral
     ccstatusline/spec.yaml               # name: ccstatusline
     rtk/README.md
     rtk/claude/spec.yaml                 # name: rtk-claude
