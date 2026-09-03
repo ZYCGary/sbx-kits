@@ -1,0 +1,30 @@
+schemaVersion: "2"
+kind: mixin
+name: ponytail-claude
+version: 0.1.0
+displayName: ponytail plugin for Claude Code
+description: Registers the DietrichGebert/ponytail marketplace and installs the ponytail plugin into Claude Code.
+sourceURL: https://github.com/ZYCGary/sbx-kits
+requires:
+  agent: claude
+agentInstructions:
+  content: |
+    ## ponytail
+
+    The [ponytail](https://github.com/DietrichGebert/ponytail) plugin is installed:
+    a skill that applies a lazy-evaluation ladder before writing code — does it need
+    to exist, is it already in the codebase, stdlib, native platform, an installed
+    dependency, a one-liner — and only then writes minimal new code.
+
+    `/ponytail [lite|full|ultra|off]` sets intensity (default `full`; override with
+    `PONYTAIL_DEFAULT_MODE` or `~/.config/ponytail/config.json`). Also
+    `/ponytail-review` (over-engineering in the current changes), `/ponytail-audit`
+    (whole repository), `/ponytail-debt`, `/ponytail-gain`, `/ponytail-help`.
+setup:
+  install:
+    - command: |
+        set -eu
+        claude plugin marketplace add DietrichGebert/ponytail
+        claude plugin install ponytail@ponytail
+      user: "1000"
+      description: Install the ponytail plugin (marketplace add first; a fresh sandbox has none configured)
