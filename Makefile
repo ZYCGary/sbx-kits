@@ -10,4 +10,5 @@ validate:
 	sbx kit validate ./caveman/claude/
 	sbx kit validate ./mattpocock-skills/claude/
 	sbx kit validate ./codegraph/claude/
+	sbx kit validate ./ponytail/claude/
 	sbx kit validate ./buf/
