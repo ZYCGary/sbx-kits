@@ -12,3 +12,4 @@ validate:
 	sbx kit validate ./codegraph/claude/
 	sbx kit validate ./ponytail/claude/
 	sbx kit validate ./buf/
+	sbx kit validate ./lsp/claude/
