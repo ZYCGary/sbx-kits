@@ -17,6 +17,8 @@ permissions:
       - keyserver.ubuntu.com
       - ppa.launchpadcontent.net
       - deb.nodesource.com
+      - packages.sury.org
+      - telemetry.meilisearch.com
       - getcomposer.org
       - www.postgresql.org
       - apt.postgresql.org

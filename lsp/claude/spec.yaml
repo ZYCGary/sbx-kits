@@ -1,0 +1,38 @@
+schemaVersion: "2"
+kind: mixin
+name: lsp-claude
+version: 0.1.0
+displayName: LSP plugins for Claude Code
+description: Registers the official Claude plugin marketplace and installs the php-lsp, gopls-lsp and typescript-lsp plugins into Claude Code.
+sourceURL: https://github.com/ZYCGary/sbx-kits
+requires:
+  agent: claude
+agentInstructions:
+  content: |
+    ## LSP plugins
+
+    The `php-lsp`, `gopls-lsp` and `typescript-lsp` plugins are installed. Each one
+    only registers a language server with Claude Code — it does not ship the server
+    binary:
+
+    | Plugin | Server command | Extensions |
+    | ------ | -------------- | ---------- |
+    | `php-lsp` | `intelephense --stdio` | `.php` |
+    | `gopls-lsp` | `gopls` | `.go` |
+    | `typescript-lsp` | `typescript-language-server --stdio` | `.ts` `.tsx` `.js` `.jsx` `.mts` `.cts` `.mjs` `.cjs` |
+
+    A language's LSP features are live only when its command is on `PATH`; check with
+    `command -v gopls` before concluding a lookup failed for another reason. Install
+    what is missing in the workspace's own toolchain — `npm install -g intelephense`,
+    `npm install -g typescript-language-server typescript`,
+    `go install golang.org/x/tools/gopls@latest` — not from this kit.
+setup:
+  install:
+    - command: |
+        set -eu
+        claude plugin marketplace add anthropics/claude-plugins-official
+        claude plugin install php-lsp@claude-plugins-official
+        claude plugin install gopls-lsp@claude-plugins-official
+        claude plugin install typescript-lsp@claude-plugins-official
+      user: "1000"
+      description: Install the php-lsp, gopls-lsp and typescript-lsp plugins (marketplace add first; a fresh sandbox has none configured)

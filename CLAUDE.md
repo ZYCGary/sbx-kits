@@ -24,6 +24,7 @@ one harness; one subdirectory per harness otherwise, with the `README.md` one le
     mattpocock-skills/claude/spec.yaml   # name: mattpocock-skills-claude
     codegraph/claude/spec.yaml           # name: codegraph-claude
     ponytail/claude/spec.yaml            # name: ponytail-claude
+    lsp/claude/spec.yaml                 # name: lsp-claude
 
 Only `ccstatusline/` ships `files/`. These were one `claude-tools/` kit until
 2026-08-21; a live sandbox may still have that name attached.

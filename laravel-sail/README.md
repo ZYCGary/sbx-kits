@@ -22,9 +22,11 @@ The Balanced preset already covers `dl.yarnpkg.com`, `registry.npmjs.org`,
 | `keyserver.ubuntu.com` | ondrej PPA GPG key | absent |
 | `ppa.launchpadcontent.net` | all `php8.4-*` packages | has `ppa.launchpad.net`, a different domain |
 | `deb.nodesource.com` | nodejs key and packages | has `nodesource.com`; exact rules do not match subdomains |
+| `packages.sury.org` | sury PHP packages | absent |
 | `getcomposer.org` | composer installer script | absent |
 | `www.postgresql.org` | pgdg signing key (ACCC4CF8.asc) | absent |
 | `apt.postgresql.org` | `postgresql-client-*` | absent |
+| `telemetry.meilisearch.com` | meilisearch analytics at runtime | absent |
 
 If the list drifts, add from `sbx policy log`, never from the Dockerfile.
 
