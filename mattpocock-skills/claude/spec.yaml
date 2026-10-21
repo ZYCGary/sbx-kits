@@ -1,9 +1,9 @@
 schemaVersion: "2"
 kind: mixin
 name: mattpocock-skills-claude
-version: 0.1.0
-displayName: mattpocock-skills plugin for Claude Code
-description: Registers the official Claude plugin marketplace and installs the mattpocock-skills plugin into Claude Code.
+version: 0.2.0
+displayName: mattpocock-skills for Claude Code
+description: Installs mattpocock/skills into Claude Code's user skills directory with the skills CLI.
 sourceURL: https://github.com/ZYCGary/sbx-kits
 requires:
   agent: claude
@@ -11,7 +11,7 @@ agentInstructions:
   content: |
     ## mattpocock-skills
 
-    The [mattpocock-skills](https://www.aihero.dev/skills) plugin is installed —
+    [mattpocock/skills](https://github.com/mattpocock/skills) is installed —
     skills for TDD, diagnosing bugs, code review, domain modeling, and others.
     They appear in the session's available-skills reminder; invoke them from
     there rather than assuming names.
@@ -19,7 +19,6 @@ setup:
   install:
     - command: |
         set -eu
-        claude plugin marketplace add anthropics/claude-plugins-official
-        claude plugin install mattpocock-skills@claude-plugins-official
+        npx -y skills add mattpocock/skills -g -a claude-code -s '*' -y --copy
       user: "1000"
-      description: Install the mattpocock-skills plugin (marketplace add first; a fresh sandbox has none configured)
+      description: Install mattpocock/skills into ~/.claude/skills (--copy, since ~/.agents is not shared)

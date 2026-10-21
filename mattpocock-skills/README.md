@@ -1,6 +1,6 @@
 # mattpocock-skills
 
-[`mattpocock-skills`](https://www.aihero.dev/skills) as a sandbox kit — skills for TDD,
+[`mattpocock/skills`](https://github.com/mattpocock/skills) as a sandbox kit — skills for TDD,
 bug diagnosis, code review, domain modeling and others. One kit per harness:
 
     mattpocock-skills/claude/     # name: mattpocock-skills-claude — verified
@@ -18,18 +18,20 @@ no host-side prerequisites, no network rules.
 
 | Entry | Note |
 | ----- | ---- |
-| `claude plugin marketplace add anthropics/claude-plugins-official` | A fresh sandbox has no marketplaces configured, not even the official one. Its failure message ("your local copy may be out of date") misdescribes the cause. |
-| `claude plugin install mattpocock-skills@claude-plugins-official` | The suffix selects among configured marketplaces. |
-| No `grep` guard | Both commands are idempotent at Claude Code 2.1.221 (`already …`, exit 0). |
-| `user: "1000"` | `claude` and its config are the agent's. |
+| `npx -y skills add mattpocock/skills` | The [skills CLI](https://skills.sh). Every skill in the repo (`-s '*'`), for Claude Code only (`-a claude-code`). |
+| `-g` | User scope, `~/.claude/skills`. Project scope would write into the workspace. |
+| `--copy` | The default symlinks from `~/.agents/skills`, which is per-sandbox; the links would dangle in other sandboxes sharing `~/.claude/skills`. |
+| `user: "1000"` | Resolves `$HOME` to `/home/agent`. |
+| No network rules | npm and GitHub are already allowed. `www.skills.sh` (install telemetry) is blocked and not needed. |
 
 ## Adding a harness
 
-Distributed through the `anthropics/claude-plugins-official` marketplace. Whether another
-harness can consume the same source is unverified — check before adding a sibling
-directory.
+The skills CLI takes other agents through `-a`. Unverified here — run one before adding a
+sibling directory.
 
 ## Cleanup
 
-Goes away with the sandbox. The plugin is per-sandbox, not written to `~/.claude/skills`
-(shared read-write across all sandboxes).
+The skills land in `~/.claude/skills`, the store shared read-write across all sandboxes,
+and survive `sbx rm`. Remove them on the host from
+`~/Library/Application Support/com.docker.sandboxes/sandboxes/agent-skills`, or create the
+sandbox with `--no-share-skills` to keep them per-sandbox.
