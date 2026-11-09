@@ -1,4 +1,4 @@
-# laravel-sail
+# laravel
 
 Mixin kit that opens the outbound hosts needed to build the Laravel Sail runtime image.
 Agent-neutral, network rules only.
@@ -7,7 +7,7 @@ Without it the Sail Dockerfile fails at `apt-get install php8.4-*` with exit cod
 
 ## Usage
 
-    sbx run claude --kit /abs/path/to/laravel-sail/
+    sbx run claude --kit /abs/path/to/laravel/
 
 No host-side prerequisites.
 
@@ -37,6 +37,6 @@ unattributed, default-deny is holding it.
 No host state; rules disappear with the sandboxes that loaded the kit. If these hosts
 were previously allowed globally, those rules survive:
 
-    sbx policy ls --wide --source kit    # expect kit:laravel-sail
+    sbx policy ls --wide --source kit    # expect kit:laravel
     sbx policy rm network --resource keyserver.ubuntu.com
     # ...repeat per host
