@@ -20,7 +20,7 @@ A kit is a directory with `spec.yaml` (the descriptor) and, when it ships conten
 the kit name** — v3 has no `name:` field — so harness variants are flat siblings, not
 `<tool>/<harness>/` (that would name every variant `claude`).
 
-    laravel-sail/spec.yaml               # agent-neutral, network rules only
+    laravel/spec.yaml                    # agent-neutral, network rules only
     node/spec.yaml + spec.dockerfile     # Node 24 + npm overlay; pnpm, buf, ccstatusline,
                                          #   mattpocock-skills-claude require it
     pnpm/  buf/                          # require node

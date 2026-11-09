@@ -10,6 +10,7 @@ capabilities:
     config:
       runtime:
         allow:
+          - laravel.com
           - keyserver.ubuntu.com
           - ppa.launchpadcontent.net
           - deb.nodesource.com

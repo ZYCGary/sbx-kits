@@ -3,7 +3,7 @@
 .PHONY: validate
 
 validate:
-	BUILDX_BUILDER=sbx-kits sbx kit validate ./laravel-sail/
+	BUILDX_BUILDER=sbx-kits sbx kit validate ./laravel/
 	BUILDX_BUILDER=sbx-kits sbx kit validate ./pnpm/
 	BUILDX_BUILDER=sbx-kits sbx kit validate ./ccstatusline/
 	BUILDX_BUILDER=sbx-kits sbx kit validate ./rtk-claude/
