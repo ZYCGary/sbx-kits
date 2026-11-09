@@ -4,16 +4,13 @@
 runs a lazy-evaluation ladder before implementation so the agent writes less code. One
 kit per harness:
 
-    ponytail/claude/     # name: ponytail-claude
-
+    ponytail-claude/     
 ## Usage
 
-    sbx create --name <sandbox> --kit /abs/path/to/ponytail/claude/ claude <workspace>
-    sbx run claude --kit /abs/path/to/ponytail/claude/
-    sbx kit add <sandbox> /abs/path/to/ponytail/claude/     # restarts it
+    sbx create --name <sandbox> --kit /abs/path/to/ponytail-claude/ claude <workspace>
+    sbx run claude --kit /abs/path/to/ponytail-claude/
 
-The path is the variant directory; `ponytail/` has no `spec.yaml`. No `files/`, no
-host-side prerequisites, no network rules. Upstream needs no API key or background
+No host-side prerequisites, no network rules. Upstream needs no API key or background
 service.
 
 ## The `claude` variant
@@ -36,7 +33,7 @@ entry rather than editing the config file — nothing in this kit writes one.
 
 ## Adding a harness
 
-Sibling directory, `name: ponytail-<harness>`, `requires.agent: <harness>`. Upstream
+Sibling directory, `ponytail-<harness>/` (v3 names a kit after its directory), `requires: ["<harness>"]`. Upstream
 documents Claude Code and the Claude desktop app only; the desktop path is a GUI flow, so
 there is nothing an install step can run for it. Check upstream for other harnesses before
 adding one, and run it first.

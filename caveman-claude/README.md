@@ -3,16 +3,13 @@
 [`caveman`](https://github.com/JuliusBrussee/caveman) as a sandbox kit — a skill and
 SessionStart hook that compress the agent's output register. One kit per harness:
 
-    caveman/claude/     # name: caveman-claude
-
+    caveman-claude/     
 ## Usage
 
-    sbx create --name <sandbox> --kit /abs/path/to/caveman/claude/ claude <workspace>
-    sbx run claude --kit /abs/path/to/caveman/claude/
-    sbx kit add <sandbox> /abs/path/to/caveman/claude/     # restarts it
+    sbx create --name <sandbox> --kit /abs/path/to/caveman-claude/ claude <workspace>
+    sbx run claude --kit /abs/path/to/caveman-claude/
 
-The path is the variant directory; `caveman/` has no `spec.yaml`. No `files/`, no
-host-side prerequisites, no network rules. Upstream needs no API key or background
+No host-side prerequisites, no network rules. Upstream needs no API key or background
 service.
 
 ## The `claude` variant
@@ -29,7 +26,7 @@ owned by the `ccstatusline/` kit; the interaction is unverified.
 
 ## Adding a harness
 
-Sibling directory, `name: caveman-<harness>`, `requires.agent: <harness>`. From upstream
+Sibling directory, `caveman-<harness>/` (v3 names a kit after its directory), `requires: ["<harness>"]`. From upstream
 `INSTALL.md`:
 
 | Harness | Install |

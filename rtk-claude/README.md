@@ -3,16 +3,14 @@
 [`rtk`](https://github.com/rtk-ai/rtk) filters command output before it reaches the
 agent's context. One kit per harness:
 
-    rtk/claude/     # name: rtk-claude — verified
+    rtk-claude/     # verified
 
 ## Usage
 
-    sbx create --name <sandbox> --kit /abs/path/to/rtk/claude/ claude <workspace>
-    sbx run claude --kit /abs/path/to/rtk/claude/
-    sbx kit add <sandbox> /abs/path/to/rtk/claude/     # restarts it
+    sbx create --name <sandbox> --kit /abs/path/to/rtk-claude/ claude <workspace>
+    sbx run claude --kit /abs/path/to/rtk-claude/
 
-The path is the variant directory; `rtk/` has no `spec.yaml`. No `files/`, no
-host-side prerequisites, no network rules.
+No host-side prerequisites, no network rules.
 
 ## The `claude` variant
 
@@ -25,7 +23,7 @@ host-side prerequisites, no network rules.
 
 ## Adding a harness
 
-Sibling directory, `name: rtk-<harness>`, `requires.agent: <harness>`, changing the
+Sibling directory, `rtk-<harness>/` (v3 names a kit after its directory), `requires: ["<harness>"]`, changing the
 harness selector — a separate axis from `--auto-patch`. Claude Code is the default, so
 the Claude variant passes no selector. From `rtk init --help` at 0.45.0:
 

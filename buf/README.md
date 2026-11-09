@@ -1,8 +1,7 @@
 # buf
 
 Mixin kit that installs the [Buf CLI](https://buf.build/docs/cli/installation/#npm) from
-npm and allowlists `buf.build`. Agent-neutral, one install step, no `files/` —
-hot-addable.
+npm and allowlists `buf.build`. Agent-neutral, one install step; requires the `node` kit.
 
 npm is the install channel Buf documents alongside the standalone binary; it needs no
 sudo here because the agent owns the npm global prefix. The `@bufbuild/buf` package
@@ -11,9 +10,8 @@ resolves a platform-specific binary through optional dependencies on
 
 ## Usage
 
-    sbx create --name <sandbox> --kit /abs/path/to/buf/ claude <workspace>
-    sbx run claude --kit /abs/path/to/buf/
-    sbx kit add <sandbox> /abs/path/to/buf/     # existing one, restarts it
+    sbx create --name <sandbox> --kit /abs/path/to/node/ --kit /abs/path/to/buf/ claude <workspace>
+    sbx run claude --kit /abs/path/to/node/ --kit /abs/path/to/buf/
 
 Verify:
 
