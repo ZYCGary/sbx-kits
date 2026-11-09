@@ -1,0 +1,27 @@
+# syntax=docker/sandbox-kit:3
+schemaVersion: "3"
+kind: mixin
+version: "0.3.0"
+displayName: mattpocock-skills for Claude Code
+description: Installs mattpocock/skills into Claude Code's user skills directory with the skills CLI.
+sourceUrl: https://github.com/ZYCGary/sbx-kits
+requires: ["claude", "node"]
+capabilities:
+  - type: com.docker.sandbox/lifecycle@1
+    config:
+      install:
+        - command: |
+            set -eu
+            npx -y skills add mattpocock/skills -g -a claude-code -s '*' -y --copy
+          user: "1000"
+          env: [NPM_CONFIG_PREFIX]
+          description: Install mattpocock/skills into ~/.claude/skills (--copy, since ~/.agents is not shared)
+  - type: com.docker.sandbox/agent-context@1
+    config:
+      content: |
+        ## mattpocock-skills
+
+        [mattpocock/skills](https://github.com/mattpocock/skills) is installed —
+        skills for TDD, diagnosing bugs, code review, domain modeling, and others.
+        They appear in the session's available-skills reminder; invoke them from
+        there rather than assuming names.

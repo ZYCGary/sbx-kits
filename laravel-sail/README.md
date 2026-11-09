@@ -1,14 +1,13 @@
 # laravel-sail
 
 Mixin kit that opens the outbound hosts needed to build the Laravel Sail runtime image.
-Agent-neutral, network rules only, no `files/` — hot-addable.
+Agent-neutral, network rules only.
 
 Without it the Sail Dockerfile fails at `apt-get install php8.4-*` with exit code 100.
 
 ## Usage
 
-    sbx run claude --kit /abs/path/to/laravel-sail/       # new sandbox
-    sbx kit add <sandbox> /abs/path/to/laravel-sail/      # existing one, restarts it
+    sbx run claude --kit /abs/path/to/laravel-sail/
 
 No host-side prerequisites.
 

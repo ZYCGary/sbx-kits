@@ -1,0 +1,34 @@
+# syntax=docker/sandbox-kit:3
+schemaVersion: "3"
+kind: mixin
+version: "0.2.0"
+displayName: codegraph for Claude Code
+description: Installs codegraph and wires its MCP server into Claude Code.
+sourceUrl: https://github.com/ZYCGary/sbx-kits
+requires: ["claude"]
+capabilities:
+  - type: com.docker.sandbox/lifecycle@1
+    config:
+      install:
+        - command: |
+            set -eu
+            curl -fsSL https://raw.githubusercontent.com/colbymchenry/codegraph/main/install.sh | sh
+            codegraph install --yes < /dev/null
+          user: "1000"
+          description: Install codegraph and register its MCP server with Claude Code (--yes; without it the agent picker exits 0 having written nothing)
+  - type: com.docker.sandbox/agent-context@1
+    config:
+      content: |
+        ## codegraph
+
+        [codegraph](https://github.com/colbymchenry/codegraph) is installed and its MCP
+        server is registered with Claude Code (`codegraph serve --mcp`, launched
+        automatically). It builds a local symbol/call-path index of a project — no
+        API keys, no network calls at query time.
+
+        Before relying on `codegraph_explore`, run `codegraph init` once in the
+        project root to build the graph (`.codegraph/codegraph.db`); after that it
+        auto-syncs on file changes. Prefer `codegraph_explore <query>` over repeated
+        file reads for "where is X" / "what calls Y" / blast-radius questions;
+        `codegraph_search`, `codegraph_node`, and `codegraph_callers` remain
+        available unlisted for narrower lookups.

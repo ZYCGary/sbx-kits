@@ -3,15 +3,14 @@
 The official LSP plugins for Claude Code — `php-lsp`, `gopls-lsp`, `typescript-lsp` — as
 a sandbox kit. One kit per harness:
 
-    lsp/claude/     # name: lsp-claude — unverified, not yet run in a sandbox
+    lsp-claude/     # unverified, not yet run in a sandbox
 
 ## Usage
 
-    sbx create --name <sandbox> --kit /abs/path/to/lsp/claude/ claude <workspace>
-    sbx run claude --kit /abs/path/to/lsp/claude/
-    sbx kit add <sandbox> /abs/path/to/lsp/claude/     # restarts it
+    sbx create --name <sandbox> --kit /abs/path/to/lsp-claude/ claude <workspace>
+    sbx run claude --kit /abs/path/to/lsp-claude/
 
-The path is the variant directory; `lsp/` has no `spec.yaml`. No `files/`, no network
+No network
 rules.
 
 ## Host prerequisites

@@ -1,15 +1,17 @@
 # Every kit is listed explicitly. Add a line here when you add a kit.
+# BUILDX_BUILDER: node/ builds with an OCI exporter; see CLAUDE.md.
 .PHONY: validate
 
 validate:
-	sbx kit validate ./laravel-sail/
-	sbx kit validate ./pnpm/
-	sbx kit validate ./ccstatusline/
-	sbx kit validate ./rtk/claude/
-	sbx kit validate ./i-have-adhd/claude/
-	sbx kit validate ./caveman/claude/
-	sbx kit validate ./mattpocock-skills/claude/
-	sbx kit validate ./codegraph/claude/
-	sbx kit validate ./ponytail/claude/
-	sbx kit validate ./buf/
-	sbx kit validate ./lsp/claude/
+	BUILDX_BUILDER=sbx-kits sbx kit validate ./laravel-sail/
+	BUILDX_BUILDER=sbx-kits sbx kit validate ./pnpm/
+	BUILDX_BUILDER=sbx-kits sbx kit validate ./ccstatusline/
+	BUILDX_BUILDER=sbx-kits sbx kit validate ./rtk-claude/
+	BUILDX_BUILDER=sbx-kits sbx kit validate ./i-have-adhd-claude/
+	BUILDX_BUILDER=sbx-kits sbx kit validate ./caveman-claude/
+	BUILDX_BUILDER=sbx-kits sbx kit validate ./mattpocock-skills-claude/
+	BUILDX_BUILDER=sbx-kits sbx kit validate ./codegraph-claude/
+	BUILDX_BUILDER=sbx-kits sbx kit validate ./ponytail-claude/
+	BUILDX_BUILDER=sbx-kits sbx kit validate ./buf/
+	BUILDX_BUILDER=sbx-kits sbx kit validate ./node/
+	BUILDX_BUILDER=sbx-kits sbx kit validate ./lsp-claude/

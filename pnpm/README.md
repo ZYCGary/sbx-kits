@@ -1,12 +1,9 @@
 # pnpm
 
-Mixin kit that installs [`pnpm`](https://pnpm.io). Agent-neutral, one install step, no
-`files/` — hot-addable.
+Mixin kit that installs [`pnpm`](https://pnpm.io). Agent-neutral, one install step.
 
-The image ships Node 22 and npm but no pnpm. Corepack is not usable: its shims go to
-`/usr/bin` (`EACCES` for the agent), and redirected to `~/.local/bin` the Debian-packaged
-corepack at `/usr/share/nodejs/corepack` is too old to load pnpm 11
-(`ERR_VM_DYNAMIC_IMPORT_CALLBACK_MISSING`). So this kit installs pnpm from the registry.
+Requires the `node` kit (the v3 `claude` image ships no Node). Installs pnpm from the
+registry rather than via corepack, so it does not depend on corepack's shim location.
 
 pnpm 11 honours `packageManager` itself — in a repo pinning `pnpm@10.15.0` the installed
 pnpm 11 hands off and `pnpm --version` reports `10.15.0`. Corepack is not needed for the
@@ -14,9 +11,8 @@ pin.
 
 ## Usage
 
-    sbx create --name <sandbox> --kit /abs/path/to/pnpm/ claude <workspace>
-    sbx run claude --kit /abs/path/to/pnpm/
-    sbx kit add <sandbox> /abs/path/to/pnpm/     # existing one, restarts it
+    sbx create --name <sandbox> --kit /abs/path/to/node/ --kit /abs/path/to/pnpm/ claude <workspace>
+    sbx run claude --kit /abs/path/to/node/ --kit /abs/path/to/pnpm/
 
 No host-side prerequisites, no network rules (`registry.npmjs.org` is in the Balanced
 preset).
@@ -25,7 +21,7 @@ preset).
 
 | Entry | Note |
 | ----- | ---- |
-| `npm install -g pnpm`, `user: "1000"` | `NPM_CONFIG_PREFIX=/usr/local/share/npm-global` is set container-wide and is `agent:agent`, so the agent installs there without sudo and can update it later. `/usr/local/share/npm-global/bin` is already on `PATH`. |
+| `npm install -g pnpm`, `user: "1000"`, `env: [NPM_CONFIG_PREFIX]` | The workload sets `NPM_CONFIG_PREFIX=/usr/local/share/npm-global`; the `node` kit creates it `agent:agent`. v3 hooks see only declared env, hence `env:`, so the agent installs there without sudo and can update it later. `/usr/local/share/npm-global/bin` is already on `PATH`. |
 
 ## Known limitation: `pnpm add -g` does not work
 
@@ -36,7 +32,7 @@ Out of scope. Project-level pnpm works; global installs fail:
       "/home/agent/.local/share/pnpm/bin" is not in PATH
 
 pnpm 11's global bin dir is `$PNPM_HOME/bin`, not `$PNPM_HOME`, and nothing puts it on
-`PATH`. `environment.variables` cannot fix it — the kit reference reserves `PATH`.
+`PATH`. A v3 mixin has no static environment, and `PATH` is the workload's.
 
 The fix, if wanted: an install step appending an export to
 `/etc/sandbox-persistent.sh` (`agent:agent 0644`, writable by a `user: "1000"` step), with

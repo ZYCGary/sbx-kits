@@ -3,16 +3,14 @@
 [`mattpocock/skills`](https://github.com/mattpocock/skills) as a sandbox kit — skills for TDD,
 bug diagnosis, code review, domain modeling and others. One kit per harness:
 
-    mattpocock-skills/claude/     # name: mattpocock-skills-claude — verified
+    mattpocock-skills-claude/     # verified
 
 ## Usage
 
-    sbx create --name <sandbox> --kit /abs/path/to/mattpocock-skills/claude/ claude <workspace>
-    sbx run claude --kit /abs/path/to/mattpocock-skills/claude/
-    sbx kit add <sandbox> /abs/path/to/mattpocock-skills/claude/     # restarts it
+    sbx create --name <sandbox> --kit /abs/path/to/node/ --kit /abs/path/to/mattpocock-skills-claude/ claude <workspace>
+    sbx run claude --kit /abs/path/to/node/ --kit /abs/path/to/mattpocock-skills-claude/
 
-The path is the variant directory; `mattpocock-skills/` has no `spec.yaml`. No `files/`,
-no host-side prerequisites, no network rules.
+No host-side prerequisites, no network rules.
 
 ## The `claude` variant
 

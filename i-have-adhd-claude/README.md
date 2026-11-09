@@ -3,16 +3,14 @@
 [`i-have-adhd`](https://github.com/ayghri/i-have-adhd) as a sandbox kit. One kit per
 harness:
 
-    i-have-adhd/claude/     # name: i-have-adhd-claude — verified
+    i-have-adhd-claude/     # verified
 
 ## Usage
 
-    sbx create --name <sandbox> --kit /abs/path/to/i-have-adhd/claude/ claude <workspace>
-    sbx run claude --kit /abs/path/to/i-have-adhd/claude/
-    sbx kit add <sandbox> /abs/path/to/i-have-adhd/claude/     # restarts it
+    sbx create --name <sandbox> --kit /abs/path/to/i-have-adhd-claude/ claude <workspace>
+    sbx run claude --kit /abs/path/to/i-have-adhd-claude/
 
-The path is the variant directory; `i-have-adhd/` has no `spec.yaml`. No `files/`, no
-host-side prerequisites, no network rules.
+No host-side prerequisites, no network rules.
 
 ## The `claude` variant
 
@@ -25,7 +23,7 @@ host-side prerequisites, no network rules.
 
 ## Adding a harness
 
-Sibling directory, `name: i-have-adhd-<harness>`, `requires.agent: <harness>`. From
+Sibling directory, `i-have-adhd-<harness>/` (v3 names a kit after its directory), `requires: ["<harness>"]`. From
 upstream `INSTALL.md` (14+ harnesses; read it rather than this table):
 
 | Harness | Install |

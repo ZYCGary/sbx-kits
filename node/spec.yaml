@@ -1,0 +1,17 @@
+# syntax=docker/sandbox-kit:3
+schemaVersion: "3"
+kind: mixin
+version: "0.1.0"
+displayName: Node.js
+description: Node.js 24 LTS with npm, npx and corepack; npm's global prefix is the workload's agent-owned NPM_CONFIG_PREFIX.
+sourceUrl: https://github.com/ZYCGary/sbx-kits
+provides: ["node@24"]
+capabilities:
+  - type: com.docker.sandbox/agent-context@1
+    config:
+      content: |
+        ## Node.js
+
+        Node.js 24 with `npm`, `npx` and `corepack` is installed in `/usr/local`.
+        `npm install -g` writes to `$NPM_CONFIG_PREFIX` (`/usr/local/share/npm-global`,
+        agent-owned, its `bin/` on `PATH`) — no sudo needed.
